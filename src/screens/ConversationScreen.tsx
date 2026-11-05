@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Pressable, StatusBar, StyleSheet, View, type AppStateStatus } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSettingsStore } from '../store/settingsStore';
 import { useConversationStore } from '../store/conversationStore';
 import { useNetworkStore } from '../store/networkStore';
@@ -14,8 +13,9 @@ import {
   STREAMING_DELAY_FAST_MS,
 } from '../services/stt/VoxtralRealtimeClient';
 import type { PersonId } from '../app/types';
-import type { RootStackParamList } from '../navigation/types';
+import type { MainNavigation } from '../navigation/types';
 import { HANDS_FREE_ENABLED } from '../app/featureFlags';
+import { getLanguage } from '../app/languages';
 import { stringsFor } from '../i18n/strings';
 import {
   DuskBackdrop,
@@ -32,7 +32,15 @@ import { SpeakerHalf } from './conversation/SpeakerHalf';
 import { NetworkPill } from './conversation/NetworkPill';
 import { findLastTurn, useTurnHaptics } from './conversation/helpers';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Conversation'>;
+/** Which of the two Parly conversation modes this tab is locked to.
+ *  'ptt'       — Converse tab: tap/hold-to-talk; hands-free control hidden.
+ *  'handsfree' — Hands-free tab: on-device VAD takes the turns (quiet places). */
+export type ConversationVariant = 'ptt' | 'handsfree';
+
+interface Props {
+  readonly navigation: MainNavigation;
+  readonly variant?: ConversationVariant;
+}
 
 type PickerSlot = 'partner' | 'self' | null;
 
@@ -41,7 +49,7 @@ const PREWARM_DEBOUNCE_MS = 500;
 /** Delay before silently validating a key the user never verified. */
 const BACKGROUND_VALIDATE_DELAY_MS = 800;
 
-export function ConversationScreen({ navigation }: Props): React.JSX.Element {
+export function ConversationScreen({ navigation, variant = 'ptt' }: Props): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const personA = useSettingsStore(s => s.personA);
   const personB = useSettingsStore(s => s.personB);
@@ -181,7 +189,8 @@ export function ConversationScreen({ navigation }: Props): React.JSX.Element {
   // offline start with a good stored key must not lock the table.
   const keyBlocked = noKey || keyStatus === 'invalid';
   const hasLanguages = Boolean(personA.language && personB.language);
-  const showHfToggle = HANDS_FREE_ENABLED && !keyBlocked && hasLanguages;
+  const showHfToggle =
+    HANDS_FREE_ENABLED && variant === 'handsfree' && !keyBlocked && hasLanguages;
   const isHfActive = conversationMode === 'hf';
 
   // Offline → pause HF; back online → resume. Keep UI mode='hf' throughout
@@ -208,7 +217,7 @@ export function ConversationScreen({ navigation }: Props): React.JSX.Element {
   }, [networkState, isHfActive, isHfPaused]);
 
   const handleMicPressIn = (speakerId: PersonId) => {
-    if (keyBlocked || isHfActive) return;
+    if (keyBlocked || isHfActive || variant === 'handsfree') return;
     if (activeTurn && activeTurn.stage !== 'done' && activeTurn.stage !== 'error') return;
     const sourceLang = speakerId === 'person_a' ? personA.language : personB.language;
     const targetLang = speakerId === 'person_a' ? personB.language : personA.language;
@@ -281,7 +290,7 @@ export function ConversationScreen({ navigation }: Props): React.JSX.Element {
   const topActiveTurn = activeTurn?.speakerId === 'person_b' ? activeTurn : null;
   const bottomActiveTurn = activeTurn?.speakerId === 'person_a' ? activeTurn : null;
 
-  const firstRun = !noKey && turns.length === 0;
+  const firstRun = !noKey && turns.length === 0 && variant === 'ptt';
 
   const topIncomingTurn = lastTurnA;
   const bottomIncomingTurn = lastTurnB;
@@ -296,6 +305,7 @@ export function ConversationScreen({ navigation }: Props): React.JSX.Element {
     activeTurn.stage !== 'error';
   const discDisabled = (side: PersonId): boolean =>
     keyBlocked ||
+    (variant === 'handsfree' && !isHfActive) ||
     (turnBusy && !(activeTurn?.speakerId === side && activeTurn?.stage === 'recording'));
 
   // Hands-free lives on the seam now (SeamControl), not in the footer.
@@ -369,6 +379,14 @@ export function ConversationScreen({ navigation }: Props): React.JSX.Element {
                   readable without turning the phone around. */}
               <NetworkPill state={networkState} lang={personA.language} />
               <View style={styles.edgeGap} />
+              {variant === 'handsfree' && (
+                <>
+                  <Text variant="serifSmall" tone="fgFaint">
+                    best in quiet places
+                  </Text>
+                  <View style={styles.edgeGap} />
+                </>
+              )}
               <Pressable
                 onPress={() => navigation.navigate('Settings')}
                 hitSlop={14}
@@ -390,6 +408,51 @@ export function ConversationScreen({ navigation }: Props): React.JSX.Element {
           onChangeLanguage={() => setPickerSlot('self')}
         />
       </View>
+
+      {/* Language bar on the seam (Converse tab): who speaks what, one tap to
+          change either side, ⇄ to swap. Hands-free keeps the seam for its wave. */}
+      {variant === 'ptt' && (
+        <View style={styles.langBarWrap} pointerEvents="box-none">
+          <View style={styles.langBar}>
+            <Pressable
+              style={styles.langSide}
+              onPress={() => setPickerSlot('self')}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={`Your language: ${personA.language ? getLanguage(personA.language).name : 'not set'}`}>
+              <Text variant="body" tone="fg" numberOfLines={1}>
+                {personA.language ? getLanguage(personA.language).name : 'Pick'}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={styles.langSwap}
+              onPress={() => {
+                if (!personA.language || !personB.language) return;
+                haptics.tick();
+                const a = personA.language;
+                setPersonLanguage('A', personB.language);
+                setPersonLanguage('B', a);
+              }}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Swap languages">
+              <Text variant="body" tone="fgMuted">
+                ⇄
+              </Text>
+            </Pressable>
+            <Pressable
+              style={styles.langSide}
+              onPress={() => setPickerSlot('partner')}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={`Other language: ${personB.language ? getLanguage(personB.language).name : 'not set'}`}>
+              <Text variant="body" tone="fg" numberOfLines={1}>
+                {personB.language ? getLanguage(personB.language).name : 'Pick'}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
 
       {/* Hands-free control — a neutral voice wave seated dead-centre on the
           seam. The wave is the only live element in HF; the discs stay quiet. */}
@@ -457,11 +520,32 @@ const styles = StyleSheet.create({
     width: space.lg,
   },
 
+  langBarWrap: {
+    position: 'absolute',
+    left: space.lg,
+    right: space.lg,
+    top: '50%',
+    marginTop: -22,
+    alignItems: 'center',
+  },
+  langBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: color.bgElevated,
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairlineStrong,
+    height: 44,
+    paddingHorizontal: space.sm,
+  },
+  langSide: { minWidth: 88, alignItems: 'center', paddingHorizontal: space.sm },
+  langSwap: { paddingHorizontal: space.sm },
+
   bannerWrap: {
     position: 'absolute',
     left: space.lg,
     right: space.lg,
-    top: '47%',
+    top: '33%',
     alignItems: 'center',
   },
   banner: {

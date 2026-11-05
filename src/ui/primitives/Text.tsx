@@ -11,6 +11,7 @@ type Variant =
   | 'displayLarge'
   | 'displayHuge'
   | 'displayHero'
+  | 'displayCompact'
   | 'serifHero'
   | 'body'
   | 'bodySmall'

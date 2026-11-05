@@ -6,7 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LanguagePairScreen } from './screens/LanguagePairScreen';
-import { ConversationScreen } from './screens/ConversationScreen';
+import { MainTabs } from './screens/MainTabs';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { LogsScreen } from './screens/LogsScreen';
 import { nativeTTSService } from './services/tts/NativeTTSService';
@@ -36,7 +36,6 @@ interface AppProps {
 }
 
 export default function App({ probe }: AppProps = {}): React.JSX.Element {
-  const languagePairConfigured = useSettingsStore(s => s.languagePairConfigured);
   // Settings persist to disk asynchronously; hold navigation until the
   // rehydrate lands so a returning user opens on Conversation, not on an
   // empty LanguagePair flash. (Mic permission is requested lazily on first
@@ -94,7 +93,7 @@ export default function App({ probe }: AppProps = {}): React.JSX.Element {
         <StatusBar barStyle="light-content" backgroundColor={color.bg} />
         <NavigationContainer>
           <Stack.Navigator
-            initialRouteName={languagePairConfigured ? 'Conversation' : 'LanguagePair'}
+            initialRouteName="LanguagePair"
             screenOptions={{
               headerShown: false,
               contentStyle: { backgroundColor: color.bg },
@@ -102,7 +101,7 @@ export default function App({ probe }: AppProps = {}): React.JSX.Element {
               animationDuration: 220,
             }}>
             <Stack.Screen name="LanguagePair" component={LanguagePairScreen} />
-            <Stack.Screen name="Conversation" component={ConversationScreen} />
+            <Stack.Screen name="Main" component={MainTabs} />
             <Stack.Screen
               name="Settings"
               component={SettingsScreen}

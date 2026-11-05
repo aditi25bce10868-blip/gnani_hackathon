@@ -1,140 +1,63 @@
-// LanguagePairScreen — first run / language re-pick.
+// Welcome screen — BharatConnect's front door.
 //
-// Visual: two huge typographic cards, swap rail between, primary CTA at
-// the bottom. Tapping a card opens a bottom-sheet picker grouped by script
-// family. Long-press a filled card to clear it.
-//
-// The cards are stacked so the user reads them top-down. The conversation
-// screen is the diplomatic / table-flat surface; this screen is single-user
-// setup and renders upright.
+// (File keeps its old name so the 'LanguagePair' route and imports stay
+// untouched.) There is no language picking here any more: Converse has its own
+// language bar, and Translate / Camera have theirs. Start just makes sure the
+// conversation has a sensible default pair and opens the tabs.
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSettingsStore } from '../store/settingsStore';
-import { getLanguage } from '../app/languages';
 import { log } from '../services/log/logStore';
 import type { RootStackParamList } from '../navigation/types';
-import {
-  Button,
-  DuskBackdrop,
-  LanguageCard,
-  LanguagePickerSheet,
-  SwapButton,
-  Text,
-  color,
-  haptics,
-  space,
-} from '../ui';
+import { Button, DuskBackdrop, Text, color, haptics, space } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'LanguagePair'>;
 
-type Slot = 'partner' | 'self';
+/** Used only when the user has never picked a language. */
+const DEFAULT_SELF = 'hi';
+const DEFAULT_OTHER = 'en';
 
 export function LanguagePairScreen({ navigation }: Props): React.JSX.Element {
   const insets = useSafeAreaInsets();
-  const personA = useSettingsStore(s => s.personA);
-  const personB = useSettingsStore(s => s.personB);
   const setPersonLanguage = useSettingsStore(s => s.setPersonLanguage);
   const setLanguagePairConfigured = useSettingsStore(s => s.setLanguagePairConfigured);
 
-  // Bottom card = self (Person A, "you"). Top card = partner (Person B).
-  const partnerCode = personB.language;
-  const selfCode = personA.language;
-
-  const partnerLang = partnerCode ? getLanguage(partnerCode) : null;
-  const selfLang = selfCode ? getLanguage(selfCode) : null;
-
-  const bothFilled = partnerCode !== '' && selfCode !== '';
-
-  // Picker sheet state.
-  const [pickerSlot, setPickerSlot] = useState<Slot | null>(null);
-
-  const openPicker = (slot: Slot) => setPickerSlot(slot);
-  const closePicker = () => setPickerSlot(null);
-
-  const onPick = (code: string) => {
-    if (pickerSlot === 'partner') setPersonLanguage('B', code);
-    else if (pickerSlot === 'self') setPersonLanguage('A', code);
-    haptics.tick();
-    closePicker();
-  };
-
-  const clearPartner = () => setPersonLanguage('B', '');
-  const clearSelf = () => setPersonLanguage('A', '');
-
-  const swap = () => {
-    if (!bothFilled) return;
-    setPersonLanguage('B', selfCode);
-    setPersonLanguage('A', partnerCode);
-  };
-
   const onStart = () => {
-    if (!bothFilled) return;
-    log.info(`[pair] start: partner=${partnerCode} self=${selfCode}`);
+    // Read live so a returning user keeps the pair they chose last time.
+    const { personA, personB } = useSettingsStore.getState();
+    if (personA.language === '') setPersonLanguage('A', DEFAULT_SELF);
+    if (personB.language === '') setPersonLanguage('B', DEFAULT_OTHER);
+    log.info('[welcome] start');
     setLanguagePairConfigured(true);
     haptics.done();
-    navigation.replace('Conversation');
+    navigation.replace('Main');
   };
-
-  const excludeForPicker =
-    pickerSlot === 'partner' ? selfCode : pickerSlot === 'self' ? partnerCode : undefined;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      {/* Dusk atmosphere — same warm/cool gradient as the conversation
-          surface, so the setup screen lives in the same world. */}
       <DuskBackdrop />
 
-      {/* Hairline header — editorial serif italic, peach + periwinkle dots
-          flank the eyebrow as a tiny preview of the speaker palette. */}
-      <View style={styles.header}>
-        <View style={styles.headerInner}>
-          <View style={styles.eyebrowRow}>
-            <View style={[styles.eyebrowDot, { backgroundColor: color.accentB }]} />
-            <Text variant="caption" tone="fgGhost" style={styles.eyebrow}>
-              PARLY — DUSK
-            </Text>
-            <View style={[styles.eyebrowDot, { backgroundColor: color.accentA }]} />
-          </View>
-          <Text variant="serifHero" tone="fg" style={styles.headline}>
-            A live translator{'\n'}for two voices.
+      <View style={styles.hero}>
+        <View style={styles.eyebrowRow}>
+          <View style={[styles.dot, { backgroundColor: color.accentB }]} />
+          <Text variant="caption" tone="fgGhost" style={styles.eyebrow}>
+            BHARATCONNECT
           </Text>
-          <Text variant="serif" tone="fgFaint" style={styles.subhead}>
-            Pick one for each speaker. You can swap or change them during
-            the conversation.
-          </Text>
+          <View style={[styles.dot, { backgroundColor: color.accentA }]} />
         </View>
+        <Text variant="serifHero" tone="fg" style={styles.headline}>
+          Welcome to{'\n'}BharatConnect.
+        </Text>
+        <Text variant="serif" tone="fgFaint" style={styles.subhead}>
+          Talk, type or point your camera — and understand every Indian language.
+        </Text>
       </View>
 
-      {/* Cards */}
-      <View style={styles.cards}>
-        <LanguageCard
-          role="partner"
-          language={partnerLang}
-          accent={color.accentB}
-          onPress={() => openPicker('partner')}
-          onClear={partnerLang ? clearPartner : undefined}
-        />
-        <SwapButton disabled={!bothFilled} onPress={swap} />
-        <LanguageCard
-          role="self"
-          language={selfLang}
-          accent={color.accentA}
-          onPress={() => openPicker('self')}
-          onClear={selfLang ? clearSelf : undefined}
-        />
-      </View>
-
-      {/* Footer */}
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, space.md) }]}>
-        <Button
-          label="Start"
-          onPress={onStart}
-          disabled={!bothFilled}
-          style={styles.cta}
-        />
+        <Button label="Start" onPress={onStart} style={styles.cta} />
         <Pressable
           onPress={() => navigation.navigate('Settings')}
           accessibilityRole="button"
@@ -144,69 +67,19 @@ export function LanguagePairScreen({ navigation }: Props): React.JSX.Element {
           </Text>
         </Pressable>
       </View>
-
-      <LanguagePickerSheet
-        visible={pickerSlot !== null}
-        excludeCode={excludeForPicker}
-        onSelect={onPick}
-        onClose={closePicker}
-      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: color.bg,
-  },
-  header: {
-    paddingHorizontal: space.xl,
-    paddingTop: space.xxl,
-    paddingBottom: space.xl,
-  },
-  headerInner: {},
-  eyebrowRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: space.md,
-  },
-  eyebrowDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    marginHorizontal: 8,
-    opacity: 0.85,
-  },
-  eyebrow: {
-    letterSpacing: 2.4,
-  },
-  headline: {
-    marginRight: space.sm,
-  },
-  subhead: {
-    marginTop: space.md,
-    paddingRight: space.xl,
-    lineHeight: 20,
-  },
-  cards: {
-    flex: 1,
-    paddingHorizontal: space.xl,
-    paddingTop: space.md,
-    justifyContent: 'center',
-  },
-  footer: {
-    paddingHorizontal: space.xl,
-    paddingTop: space.md,
-    alignItems: 'center',
-  },
-  cta: {
-    alignSelf: 'stretch',
-    paddingVertical: 16,
-    marginBottom: space.md,
-    borderRadius: 16,
-  },
-  settingsLink: {
-    paddingVertical: space.xs,
-  },
+  root: { flex: 1, backgroundColor: color.bg },
+  hero: { flex: 1, justifyContent: 'center', paddingHorizontal: space.xl },
+  eyebrowRow: { flexDirection: 'row', alignItems: 'center', marginBottom: space.md },
+  dot: { width: 5, height: 5, borderRadius: 3, marginHorizontal: 8, opacity: 0.85 },
+  eyebrow: { letterSpacing: 2.4 },
+  headline: { marginRight: space.sm },
+  subhead: { marginTop: space.md, paddingRight: space.xl, lineHeight: 22 },
+  footer: { paddingHorizontal: space.xl, paddingTop: space.md, alignItems: 'center' },
+  cta: { alignSelf: 'stretch', paddingVertical: 16, marginBottom: space.md, borderRadius: 16 },
+  settingsLink: { paddingVertical: space.xs },
 });

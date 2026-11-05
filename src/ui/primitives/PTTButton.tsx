@@ -25,7 +25,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
-import Svg, { Circle, Defs, Mask, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Mask, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { color, font, motion, radius } from '../theme';
 import { Waveform } from '../animations/Waveform';
 import { Bloom } from '../animations/Bloom';
@@ -294,12 +294,30 @@ export function PTTButton({
           </View>
 
           {/* Disc content by mode. PTT-active shows the live waveform; every
-              resting state (incl. HF) shows the neutral tick + language code. */}
+              resting state (incl. HF) shows the mic glyph + language code. */}
           {isActive ? (
             <Waveform active color={accent} bars={5} height={30} />
           ) : (
             <View style={styles.discIdleContent} pointerEvents="none">
-              <View style={styles.tick} />
+              <Svg width={34} height={34} viewBox="0 0 24 24">
+                <Rect
+                  x={9}
+                  y={3}
+                  width={6}
+                  height={11}
+                  rx={3}
+                  stroke={`rgba(255,255,255,${langOpacity + 0.3})`}
+                  strokeWidth={1.7}
+                  fill="none"
+                />
+                <Path
+                  d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"
+                  stroke={`rgba(255,255,255,${langOpacity + 0.3})`}
+                  strokeWidth={1.7}
+                  strokeLinecap="round"
+                  fill="none"
+                />
+              </Svg>
               <Text style={[styles.lang, { color: `rgba(255,255,255,${langOpacity})` }]}>
                 {label}
               </Text>
@@ -344,22 +362,16 @@ const styles = StyleSheet.create({
   },
   discIdleContent: {
     position: 'absolute',
-    top: 36,
+    top: 26,
     left: 0,
     right: 0,
     alignItems: 'center',
   },
-  tick: {
-    width: 16,
-    height: 1.5,
-    borderRadius: 1,
-    backgroundColor: color.discTick,
-  },
   lang: {
-    marginTop: 16,
+    marginTop: 6,
     fontFamily: font.serifFamily,
     fontStyle: 'italic',
-    fontSize: 16,
+    fontSize: 14,
     letterSpacing: 1.2,
   },
   disabled: {

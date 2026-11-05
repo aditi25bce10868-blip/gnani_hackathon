@@ -58,6 +58,7 @@ interface LanguagePickerSheetProps {
 }
 
 const SCRIPT_GROUPS: { readonly title: string; readonly codes: readonly string[] }[] = [
+  { title: 'Indian languages', codes: ['hi', 'bn', 'mr', 'gu', 'pa', 'ta', 'te', 'kn', 'ml', 'or', 'as'] },
   {
     title: 'Latin',
     codes: ['es', 'en', 'fr', 'de', 'it', 'pt', 'nl', 'pl', 'cs', 'tr', 'sv', 'no', 'da', 'fi', 'ro', 'hu', 'sw', 'vi', 'id'],
@@ -65,7 +66,6 @@ const SCRIPT_GROUPS: { readonly title: string; readonly codes: readonly string[]
   { title: 'Cyrillic', codes: ['ru', 'uk'] },
   { title: 'Greek', codes: ['el'] },
   { title: 'Arabic / Hebrew', codes: ['ar', 'he', 'fa', 'ur'] },
-  { title: 'Devanagari / Bengali', codes: ['hi', 'bn'] },
   { title: 'CJK', codes: ['zh', 'ja', 'ko'] },
   { title: 'Thai', codes: ['th'] },
 ];

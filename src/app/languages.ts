@@ -42,6 +42,16 @@ export const LANGUAGES: readonly Language[] = [
   { code: 'ro', name: 'Romanian',    endonym: 'Română',      emoji: '🇷🇴' },
   { code: 'hu', name: 'Hungarian',   endonym: 'Magyar',      emoji: '🇭🇺' },
   { code: 'sw', name: 'Swahili',     endonym: 'Kiswahili',   emoji: '🇹🇿' },
+  // Indian languages (BharatConnect).
+  { code: 'mr', name: 'Marathi',     endonym: 'मराठी',        emoji: '🇮🇳' },
+  { code: 'gu', name: 'Gujarati',    endonym: 'ગુજરાતી',      emoji: '🇮🇳' },
+  { code: 'pa', name: 'Punjabi',     endonym: 'ਪੰਜਾਬੀ',       emoji: '🇮🇳' },
+  { code: 'ta', name: 'Tamil',       endonym: 'தமிழ்',        emoji: '🇮🇳' },
+  { code: 'te', name: 'Telugu',      endonym: 'తెలుగు',       emoji: '🇮🇳' },
+  { code: 'kn', name: 'Kannada',     endonym: 'ಕನ್ನಡ',        emoji: '🇮🇳' },
+  { code: 'ml', name: 'Malayalam',   endonym: 'മലയാളം',      emoji: '🇮🇳' },
+  { code: 'or', name: 'Odia',        endonym: 'ଓଡ଼ିଆ',        emoji: '🇮🇳' },
+  { code: 'as', name: 'Assamese',    endonym: 'অসমীয়া',      emoji: '🇮🇳' },
 ];
 
 export function getLanguage(code: string): Language {
