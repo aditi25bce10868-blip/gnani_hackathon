@@ -1,4 +1,4 @@
-// SeamControl — the hands-free toggle, as a horizontal "voice wave" seated
+// SeamControl — the hands-free start/stop button, drawn as a microphone, seated
 // dead-centre on the seam.
 //
 // Why here, why neutral?
@@ -51,9 +51,8 @@ import Animated, {
   withSpring,
   withSequence,
   withTiming,
-  type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { motion } from '../theme';
 import { haptics } from '../haptics';
 import { useAudioLevel } from '../animations/useAudioLevel';
@@ -88,8 +87,9 @@ function resolve(mode: SeamControlMode, activity: SeamActivity): Resolved {
 }
 
 // ── Geometry ───────────────────────────────────────────────────────────────
-const PILL_W = 66;
-const PILL_H = 28;
+const PILL_W = 60;
+const PILL_H = 60;
+const MIC_SIZE = 28;
 export const BAR_COUNT = 7;
 
 // ── Wave motion ──────────────────────────────────────────────────────────────
@@ -128,14 +128,8 @@ export const WAVE_MOTION = {
   traduciendo: { floor: 0.5, swing: 0.5, reactivity: 0, spread: 0.62 },
 } satisfies Record<'escuchando' | 'traduciendo', WaveMotion>;
 
-// Bar geometry per resolved state.
-const BAR_HEIGHT = {
-  reposo: 5,
-  escuchando: 16,
-  traduciendo: 13,
-  paused: 5,
-} satisfies Record<Resolved, number>;
-const BAR_COLOR = {
+// Mic colour per resolved state.
+const MIC_COLOR = {
   // Off is quiet, but it must still be *there* — an empty pill reads as a bug,
   // not as a resting control. These two are the only thing drawn when nothing
   // is happening, so they carry the whole "this is a thing you can press".
@@ -146,32 +140,6 @@ const BAR_COLOR = {
 } satisfies Record<Resolved, string>;
 
 // ── Bars ─────────────────────────────────────────────────────────────────────
-
-/**
- * The off / offline bar: a still dot, always drawn.
- *
- * Deliberately a plain View with no animation and no shared value. An earlier
- * pass had it scale up from 0 on mount, which meant a single missed animation
- * left `scaleY: 0` — seven invisible bars and an empty pill. Nothing about a
- * resting dot needs to animate, so nothing here can fail to.
- */
-function StillBar({ height, color }: { height: number; color: string }): React.JSX.Element {
-  return <View style={[styles.bar, { height, backgroundColor: color }]} />;
-}
-
-interface WaveBarProps {
-  readonly index: number;
-  readonly height: number;
-  readonly color: string;
-  /** Free-running 0→1 sawtooth shared by every bar. */
-  readonly phase: SharedValue<number>;
-  /** Smoothed mic level, 0..1. Ignored when `reactivity` is 0. */
-  readonly level: SharedValue<number>;
-  readonly floor: number;
-  readonly swing: number;
-  readonly reactivity: number;
-  readonly spread: number;
-}
 
 /**
  * The whole wave, as one expression: bar `index`'s height as a fraction of the
@@ -206,34 +174,6 @@ export function waveAmplitude(
   return rest + (1 - rest) * level * reactivity * arch * (0.42 + 0.58 * r);
 }
 
-/**
- * One bar of the live wave. The style recomputes on the UI thread whenever the
- * phase clock ticks or a new mic sample lands — never in React.
- */
-function WaveBar({
-  index,
-  height,
-  color,
-  phase,
-  level,
-  floor,
-  swing,
-  reactivity,
-  spread,
-}: WaveBarProps): React.JSX.Element {
-  const style = useAnimatedStyle(() => {
-    const amp = waveAmplitude(index, phase.value, level.value, floor, swing, reactivity, spread);
-    return {
-      transform: [{ scaleY: amp }],
-      // Peaks brighten as well as grow: two channels for the same signal is
-      // what separates a loud syllable from a merely tall one.
-      opacity: 0.62 + 0.38 * amp,
-    };
-  });
-
-  return <Animated.View style={[styles.bar, { height, backgroundColor: color }, style]} />;
-}
-
 // ── Component ────────────────────────────────────────────────────────────────
 export function SeamControl({
   mode,
@@ -246,8 +186,6 @@ export function SeamControl({
   const isOff = resolved === 'reposo';
   const isPaused = resolved === 'paused';
   const isOn = resolved === 'escuchando' || resolved === 'traduciendo';
-  // Both on-states run the wave formula; off/paused bars are flat and still.
-  const wave = resolved === 'escuchando' || resolved === 'traduciendo' ? resolved : null;
   // The mic is only worth watching while we're the ones listening. In
   // 'traduciendo' the phone is the one making the noise.
   const level = useAudioLevel(resolved === 'escuchando');
@@ -257,7 +195,6 @@ export function SeamControl({
   const pop = useSharedValue(1);
   const invite = useSharedValue(0);   // breathing halo (off only)
   const glow = useSharedValue(0);     // inner glow (on only)
-  const phase = useSharedValue(0);    // free-running wave clock (on only)
   // Pill tone: -1 paused, 0 off, 1 on. Drives bg + border cross-fade.
   const tone = useSharedValue(0);
 
@@ -322,25 +259,6 @@ export function SeamControl({
     return () => cancelAnimation(glow);
   }, [isOn, glow]);
 
-  // The wave clock. One linear sawtooth for all seven bars — the ripple's shape
-  // lives in the per-bar formula, not in per-bar animations, so nothing can
-  // drift out of step. Reset to 0 before (re)starting: withRepeat replays from
-  // whatever the value happened to be when it began, and a cancelled clock left
-  // mid-cycle would stretch the first lap.
-  // (Do NOT reach for withDelay to stagger bars here — `withDelay(d,
-  // withRepeat(...))` freezes on this Reanimated 4 + worklets build.)
-  useEffect(() => {
-    cancelAnimation(phase);
-    if (wave === null) return;
-    phase.value = 0;
-    phase.value = withRepeat(
-      withTiming(1, { duration: RIPPLE_PERIOD[wave], easing: Easing.linear }),
-      -1,
-      false,
-    );
-    return () => cancelAnimation(phase);
-  }, [wave, phase]);
-
   const handlePress = () => {
     haptics.tap();
     onToggle();
@@ -392,8 +310,6 @@ export function SeamControl({
   const hintStyle = useAnimatedStyle(() => ({ opacity: 0.4 + 0.6 * invite.value }));
   const showHints = isOff && (hintTop !== null || hintBottom !== null);
 
-  const waveMotion = wave === null ? null : WAVE_MOTION[wave];
-
   return (
     <Animated.View style={[styles.anchor, wrapStyle]} pointerEvents="box-none">
       {/* State lives in accessibilityState/Value (switch semantics), not baked
@@ -406,7 +322,7 @@ export function SeamControl({
         accessibilityRole="switch"
         accessibilityState={{ checked: isOn, disabled: isPaused }}
         accessibilityValue={isPaused ? { text: 'paused — offline' } : undefined}
-        accessibilityLabel="Hands-free"
+        accessibilityLabel={isOn ? 'Stop hands-free' : 'Start hands-free'}
         style={styles.press}>
         {/* Invite halo — a 1 px ring 4 px outside the pill, breathing when off. */}
         <Animated.View style={[styles.invite, inviteStyle]} pointerEvents="none" />
@@ -449,28 +365,20 @@ export function SeamControl({
             </Svg>
           </Animated.View>
 
-          {/* The wave. Live states share the phase clock and the mic level;
-              reposo/paused are flat and still. */}
-          <View style={styles.barRow}>
-            {Array.from({ length: BAR_COUNT }, (_, i) =>
-              waveMotion === null ? (
-                <StillBar key={i} height={BAR_HEIGHT[resolved]} color={BAR_COLOR[resolved]} />
-              ) : (
-                <WaveBar
-                  key={i}
-                  index={i}
-                  height={BAR_HEIGHT[resolved]}
-                  color={BAR_COLOR[resolved]}
-                  phase={phase}
-                  level={level}
-                  floor={waveMotion.floor}
-                  swing={waveMotion.swing}
-                  reactivity={waveMotion.reactivity}
-                  spread={waveMotion.spread}
-                />
-              ),
-            )}
-          </View>
+          {/* The microphone. Tap to start; tap again to stop. The ring around
+              it already follows the live mic level while listening. */}
+          <Svg width={MIC_SIZE} height={MIC_SIZE} viewBox="0 0 24 24">
+            <Rect x={9} y={3} width={6} height={11} rx={3} fill={isOn ? MIC_COLOR[resolved] : 'none'} stroke={MIC_COLOR[resolved]} strokeWidth={1.7} />
+            <Path d="M5.5 11a6.5 6.5 0 0 0 13 0" fill="none" stroke={MIC_COLOR[resolved]} strokeWidth={1.7} strokeLinecap="round" />
+            <Path d="M12 17.5L12 21" fill="none" stroke={MIC_COLOR[resolved]} strokeWidth={1.7} strokeLinecap="round" />
+            {isPaused && <Path d="M4 4L20 20" fill="none" stroke={MIC_COLOR[resolved]} strokeWidth={1.7} strokeLinecap="round" />}
+          </Svg>
+          {/* Stop badge — only while hands-free is running. */}
+          {isOn && (
+            <View style={styles.stopBadge} pointerEvents="none">
+              <View style={styles.stopSquare} />
+            </View>
+          )}
         </Animated.View>
       </Pressable>
     </Animated.View>
@@ -550,16 +458,21 @@ const styles = StyleSheet.create({
   hintText: {
     color: 'rgba(255,255,255,0.72)',
   },
-  barRow: {
-    flexDirection: 'row',
+  stopBadge: {
+    position: 'absolute',
+    right: 4,
+    bottom: 4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.95)',
     alignItems: 'center',
     justifyContent: 'center',
-    // Prototype: 7 bars, 2px wide, 3px gap. Use real gap (no outer margins) so
-    // the row width matches the prototype exactly.
-    gap: 3,
   },
-  bar: {
-    width: 2,
-    borderRadius: 2,
+  stopSquare: {
+    width: 6,
+    height: 6,
+    borderRadius: 1,
+    backgroundColor: '#111',
   },
 });

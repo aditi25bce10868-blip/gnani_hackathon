@@ -462,15 +462,18 @@ export function SettingsScreen({ navigation }: Props): React.JSX.Element {
                 />
               </Section>
 
-              <Section label="DIAGNOSTICS">
-                <Button
-                  label="View logs"
-                  variant="secondary"
-                  onPress={() => navigation.navigate('Logs')}
-                />
-              </Section>
             </>
           )}
+
+          {/* Always available: with the server setup there may be no API key, and
+              the logs are how a problem gets diagnosed. */}
+          <Section label="DIAGNOSTICS">
+            <Button
+              label="View logs"
+              variant="secondary"
+              onPress={() => navigation.navigate('Logs')}
+            />
+          </Section>
 
           <Text variant="serif" tone="fgGhost" style={styles.versionTag}>
             PARLY — DUSK

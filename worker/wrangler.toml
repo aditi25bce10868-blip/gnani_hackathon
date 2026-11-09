@@ -1,0 +1,15 @@
+name = "bharatconnect-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+[vars]
+GROQ_MODEL = "qwen/qwen3.8-27b"
+# Listening engine: "gnani" (best for Indian languages, uses credits) or "groq" (free Whisper).
+STT_ENGINE = "gnani"
+# Secrets (never put these here):  wrangler secret put GROQ_API_KEY
+#                                  wrangler secret put GNANI_API_KEY
+#                                  wrangler secret put APP_TOKEN
+# Spoken-reply audio quality. 24 kHz is clear for speech and half the download of
+# 48 kHz (the biggest part of "time until the phone starts speaking" on mobile data).
+# If a voice sounds wrong or Gnani rejects it, put 48000 back.
+GNANI_TTS_SAMPLE_RATE = "24000"

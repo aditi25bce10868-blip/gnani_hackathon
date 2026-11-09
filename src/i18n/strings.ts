@@ -652,6 +652,8 @@ const TABLE = new Map<string, SurfaceStrings>(Object.entries({
  *  for languages outside the picker set ('' during first-run included). */
 export function stringsFor(langCode: string): SurfaceStrings {
   if (!langCode) return en;
+  // Hinglish readers read Roman letters — the English chrome, not the Devanagari one.
+  if (langCode === 'hi-hinglish') return en;
   const primary = langCode.split(/[-_]/)[0].toLowerCase();
   return TABLE.get(primary) ?? en;
 }

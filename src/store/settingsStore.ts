@@ -63,6 +63,10 @@ interface SettingsState {
    *  the seam wave carries a labelled hint — an unlabelled 66×28 pill is
    *  invisible to someone who was never told it exists. */
   readonly hfDiscovered: boolean;
+  /** Converse tab: listen for the speaker's language AND English together
+   *  (Hindi + English, Tamil + English …). On by default — it is how most
+   *  people in India actually talk. */
+  readonly mixedSpeech: boolean;
 }
 
 interface SettingsActions {
@@ -78,6 +82,7 @@ interface SettingsActions {
   setPeople: (people: readonly string[]) => void;
   setLanguagePairConfigured: (v: boolean) => void;
   setHfDiscovered: (v: boolean) => void;
+  setMixedSpeech: (v: boolean) => void;
 }
 
 const initialState: SettingsState = {
@@ -90,6 +95,7 @@ const initialState: SettingsState = {
   people: DEFAULT_PEOPLE,
   languagePairConfigured: false,
   hfDiscovered: false,
+  mixedSpeech: true,
 };
 
 // Persistence adapter over react-native-fs (already a dependency for the log
@@ -153,6 +159,8 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
         set({ languagePairConfigured }),
 
       setHfDiscovered: hfDiscovered => set({ hfDiscovered }),
+
+      setMixedSpeech: mixedSpeech => set({ mixedSpeech }),
     }),
     {
       name: 'parly-settings',
@@ -167,6 +175,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
         people: state.people,
         languagePairConfigured: state.languagePairConfigured,
         hfDiscovered: state.hfDiscovered,
+        mixedSpeech: state.mixedSpeech,
       }),
     },
   ),

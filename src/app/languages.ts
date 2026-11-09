@@ -52,6 +52,9 @@ export const LANGUAGES: readonly Language[] = [
   { code: 'ml', name: 'Malayalam',   endonym: 'മലയാളം',      emoji: '🇮🇳' },
   { code: 'or', name: 'Odia',        endonym: 'ଓଡ଼ିଆ',        emoji: '🇮🇳' },
   { code: 'as', name: 'Assamese',    endonym: 'অসমীয়া',      emoji: '🇮🇳' },
+  // Hindi + English as people actually text and talk it, written in Roman
+  // letters. Gnani hears it (Romanised output) and speaks it (hi-en voice).
+  { code: 'hi-hinglish', name: 'Hinglish', endonym: 'Hinglish', emoji: '🇮🇳' },
 ];
 
 export function getLanguage(code: string): Language {

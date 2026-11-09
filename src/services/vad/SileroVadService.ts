@@ -43,6 +43,8 @@ export const VAD_FRAME_SAMPLES = 512;
 // Silero VAD v5 state shape: [2, 1, 128] — a single h+c tensor.
 const STATE_SIZE = 2 * 1 * 128; // = 256 floats
 const STATE_DIMS = [2, 1, 128];
+/** Silero v5 reads each 512-sample frame together with the 64 samples before it. */
+const MODEL_CONTEXT_SAMPLES = 64;
 
 export interface VadConfig {
   /** Probability threshold above which a frame is considered speech (0-1). */
@@ -104,6 +106,16 @@ export interface VadConfig {
    * answers. Default 15 s.
    */
   readonly maxUtteranceMs?: number;
+  /**
+   * Feed the model the way Silero v5 expects: each 512-sample frame preceded by
+   * the last 64 samples of the frame before it (input length 576, not 512).
+   * Without that context the model returns ~0.001 for ordinary speech (measured
+   * on device AND against the reference model), so the detector falls back to
+   * loudness alone. Off by default so existing callers keep their behaviour;
+   * when it is on, use a normal speechProbThreshold (≈0.5), not the very low
+   * one that was compensating for the missing context.
+   */
+  readonly modelContext?: boolean;
 }
 
 type Unsubscribe = () => void;
@@ -177,6 +189,8 @@ export class SileroVadService {
   private readonly energyThreshold: number;
   private readonly energySustainThreshold: number;
   private readonly maxUtteranceMs: number;
+  private readonly modelContext: boolean;
+  private context = new Float32Array(MODEL_CONTEXT_SAMPLES);
   private readonly sessionFactory: OrtSessionFactory;
 
   constructor(config: VadConfig = {}, sessionFactory?: OrtSessionFactory) {
@@ -193,6 +207,7 @@ export class SileroVadService {
       this.energyThreshold,
     );
     this.maxUtteranceMs = config.maxUtteranceMs ?? 15000;
+    this.modelContext = config.modelContext ?? false;
     this.sessionFactory = sessionFactory ?? defaultOrtSessionFactory;
   }
 
@@ -300,6 +315,7 @@ export class SileroVadService {
     this.clearSilenceTimers();
     this.pauseHintEmitted = false;
     this.state = new Float32Array(STATE_SIZE);
+    this.context = new Float32Array(MODEL_CONTEXT_SAMPLES);
     this.speaking = false;
     this.frameCount = 0;
     this.maxProbWindow = 0;
@@ -318,6 +334,7 @@ export class SileroVadService {
     this.inferenceQueue = [];
     this.inferenceRunning = false;
     this.state = new Float32Array(STATE_SIZE);
+    this.context = new Float32Array(MODEL_CONTEXT_SAMPLES);
     this.frameCount = 0;
     this.maxProbWindow = 0;
     this.maxAmpWindow = 0;
@@ -356,8 +373,14 @@ export class SileroVadService {
       let prob = 0;
       if (this.session) {
         const ort = getOrt();
+        let modelInput = input;
+        if (this.modelContext) {
+          modelInput = new Float32Array(MODEL_CONTEXT_SAMPLES + VAD_FRAME_SAMPLES);
+          modelInput.set(this.context, 0);
+          modelInput.set(input, MODEL_CONTEXT_SAMPLES);
+        }
         const feeds = {
-          input: new ort.Tensor('float32', input, [1, VAD_FRAME_SAMPLES]),
+          input: new ort.Tensor('float32', modelInput, [1, modelInput.length]),
           state: new ort.Tensor('float32', new Float32Array(this.state), STATE_DIMS),
           sr: new ort.Tensor('int64', SR_DATA, [1]),
         } satisfies Record<string, OrtTensor>;
@@ -371,6 +394,7 @@ export class SileroVadService {
         // the reference through native buffer reuse.
         const stateNRaw = results['stateN'].data as Float32Array;
         this.state = new Float32Array(stateNRaw);
+        if (this.modelContext) this.context = input.slice(VAD_FRAME_SAMPLES - MODEL_CONTEXT_SAMPLES);
       }
 
       this.processProbability(prob, frameRms);

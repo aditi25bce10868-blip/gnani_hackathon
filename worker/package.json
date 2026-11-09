@@ -1,0 +1,12 @@
+{
+  "name": "bharatconnect-worker",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "vitest": "^5.1.0",
+    "wrangler": "^4.0.0"
+  }
+}

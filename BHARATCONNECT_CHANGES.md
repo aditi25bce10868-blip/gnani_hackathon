@@ -1,53 +1,43 @@
-# BharatConnect frontend — overlay
+# BharatConnect — Round 6: Converse on Gnani + mixed-language speech
 
-Unzip this INTO the folder that contains `parly/` (it overwrites existing files, adds new ones).
-**Delete** `parly/src/screens/tabs/TextScreen.tsx` if you applied the earlier overlay (this one removes it).
+Unzip INTO the folder that contains `parly/` (overwrites; adds new files).
+**No new native dependency, no Android rebuild** — JS only. But the **Worker must be redeployed**:
 
-New native dependencies for the Camera tab (then rebuild the Android app):
+    cd parly/worker
+    npx wrangler deploy
 
-    npm i react-native-vision-camera@4.7.3 @react-native-ml-kit/text-recognition
+Then reload the app (`npm start`, press `r`). Nothing else changes in `config.ts`.
 
-Then from `parly/`:
+## What Converse does now
+Hold your disc → speak → release:  **Gnani listens** (`/stt`) → **Qwen translates** (`/translate`, with the last 3 turns as
+context) → **Gnani speaks** (`/tts`, phone voice if Gnani lacks the language or fails).
+No Mistral key is needed for Converse any more. If `config.ts` `baseUrl` is empty, Converse falls back to Parly's old
+Mistral pipeline. **Hands-free is untouched (still Mistral) — next step.**
 
-    npm install
-    npm start            # Metro
-    npm run android      # second terminal, device/emulator attached
+## Mixed-language speech (what Gnani supports)
+- **+EN switch** on the seam language bar (shows when one side is an Indian language). On = the speaker's language is heard
+  *together with* English (`hi-IN,en-IN`, Gnani Prisma v3.0), English words stay Latin, numbers become digits, and the
+  translator is told the sentence is code-mixed. Off = plain single-language listening. Remembered (settings).
+- **Hinglish** is a new language in every picker. Speaking it: heard as Roman-script text. Translating *into* it:
+  casual Roman-script Hindi with English words kept. Spoken with Gnani's Hinglish voice (Poorvi, `hi-en`).
+- English needs no switch (Gnani's English model already takes English–Hindi mixed audio).
 
-## Tabs (5)
-Converse · Voice · **Translate** (Text + Translate merged) · **Camera** (new) · Hands-free
+## Files
+New (app):  `services/bharat/{ServerConverse,converse,mixedSpeech}.ts`, tests `ServerConverse.test.ts`, `mixedSpeech.test.ts`
+Changed (app): `screens/ConversationScreen.tsx`, `services/bharat/{serverApi,types,httpProviders,serverVoice}.ts`,
+  `store/settingsStore.ts` (+`mixedSpeech`), `app/languages.ts` (+Hinglish), `ui/primitives/LanguagePickerSheet.tsx`,
+  `i18n/strings.ts` (Hinglish readers get English chrome), `screens/bharat/speak.ts` (Hinglish phone-voice fallback),
+  tests `serverVoice.test.ts`, `httpProviders.test.ts` (additive)
+Changed (worker): `src/{voice,handler,prompt,languages}.ts`, `test/{voice,handler}.test.ts`, `README.md`
+  — `prompt.ts` is the teammate's file: only one added sentence in `sourceLine` + an optional `sourceMix` field.
 
-- Translate = the old Translate screen: auto-detect or pick a source, live as-you-type, Share / selection-menu / clipboard-chip intake, recents. It already covers everything Text did.
-- Camera = point, snap, ML Kit reads text blocks, each block is translated and drawn over the photo; full text below with Copy / Speak / Share.
+## Checked / not checked
+- Worker: typechecks; 48 tests pass (existing + new).
+- App logic (engine, mixed-speech, translate/STT request shape, error kinds): 68 tests pass under strict TypeScript, run against
+  the real conversation store with the microphone/network/voice faked.
+- NOT run: on a device, `ConversationScreen.tsx` under the full RN typecheck, or the existing MainTabs test.
+  Please run `npm run typecheck && npm test` and try one Hindi↔English turn with +EN on and off.
+- Gnani's own docs warn that Prisma v3.0 context hints can lower accuracy, so keyterms/previous_text are NOT sent yet.
 
-## Round 3
-- Welcome screen (LanguagePairScreen.tsx): "Welcome to BharatConnect" + Start. No language picking; Start sets Hindi/English
-  only if no language was ever chosen. App.tsx now always opens on it.
-- Converse: language bar on the seam (You ⇄ Other, tap to change, ⇄ to swap); discs show a microphone icon (ui/primitives/PTTButton.tsx).
-- Converse/Hands-free still need a Mistral API key (Settings) — that is Parly's translation + speech engine.
-
-## Camera limits (be aware)
-- Snap-and-read, not a live per-frame overlay (that needs a native frame processor — later).
-- On-device OCR (ML Kit) reads Latin, Devanagari (Hindi, Marathi), Chinese, Japanese, Korean ONLY.
-  Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati, Punjabi, Odia, Assamese, Urdu are NOT readable on-device;
-  the tab says so. To support them add a cloud OCR (Bhashini OCR or Google Cloud Vision) in
-  `src/services/bharat/mlkitOcr.ts` / `providers.ts`.
-- Not yet run on a device: check overlay alignment on a real photo (EXIF rotation).
-
-## Changed this round
-- src/screens/MainTabs.tsx, TabIcons.tsx (+camera icon, −text), store/bharatStore.ts (pairs: voice/translate/camera)
-- src/services/bharat/{types,providers}.ts (+OcrProvider), tests, MainTabs test
-- android/.../AndroidManifest.xml (+CAMERA permission)
-- REMOVED: src/screens/tabs/TextScreen.tsx
-## New this round
-- src/screens/tabs/CameraScreen.tsx
-- src/services/bharat/{mlkitOcr,ocrScript}.ts
-- src/services/native/visionCamera.ts
-
-## Earlier files (unchanged this round)
-AndroidManifest share/selection filters, MainActivity.kt, MainApplication.kt, App.tsx, navigation/types.ts,
-ConversationScreen.tsx (`variant`), LanguagePairScreen.tsx, languages.ts (+9 Indian languages),
-LanguagePickerSheet.tsx, Text.tsx, BharatSystem{Module,Package}.kt, VoiceScreen, TranslateScreen,
-bharat/{LangPairBar,ResultCard,ScreenHeader,speak}, services/bharat/{mockProviders,scriptDetect}, services/native/bharatSystem.ts
-
-## Backend swap point (later)
-src/services/bharat/providers.ts — replace the mock providers with Gnani / LLM / IndicTrans2 (+ cloud OCR).
+## Earlier rounds
+Unchanged — see the previous notes (Rounds 1–5).

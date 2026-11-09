@@ -58,7 +58,7 @@ interface LanguagePickerSheetProps {
 }
 
 const SCRIPT_GROUPS: { readonly title: string; readonly codes: readonly string[] }[] = [
-  { title: 'Indian languages', codes: ['hi', 'bn', 'mr', 'gu', 'pa', 'ta', 'te', 'kn', 'ml', 'or', 'as'] },
+  { title: 'Indian languages', codes: ['hi', 'hi-hinglish', 'bn', 'mr', 'gu', 'pa', 'ta', 'te', 'kn', 'ml', 'or', 'as'] },
   {
     title: 'Latin',
     codes: ['es', 'en', 'fr', 'de', 'it', 'pt', 'nl', 'pl', 'cs', 'tr', 'sv', 'no', 'da', 'fi', 'ro', 'hu', 'sw', 'vi', 'id'],

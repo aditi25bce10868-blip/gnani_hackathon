@@ -7,6 +7,9 @@ import { useSettingsStore } from '../store/settingsStore';
 import { useConversationStore } from '../store/conversationStore';
 import { useNetworkStore } from '../store/networkStore';
 import { getOrchestrator } from '../services/pipeline/orchestrator';
+import { CONVERSE_ON_SERVER, getServerConverse, getServerHandsFree } from '../services/bharat/converse';
+import { pairOnServer } from '../services/bharat/handsFreeRouting';
+import { pairCanMix } from '../services/bharat/mixedSpeech';
 import { validateMistralApiKey } from '../services/auth/validateApiKey';
 import {
   STREAMING_DELAY_ACCURATE_MS,
@@ -44,6 +47,36 @@ interface Props {
 
 type PickerSlot = 'partner' | 'self' | null;
 
+/** What the push-to-talk discs drive — Parly's orchestrator or the server engine. */
+interface PttEngine {
+  beginTurn(args: {
+    readonly speakerId: PersonId;
+    readonly sourceLang: string;
+    readonly targetLang: string;
+  }): Promise<void>;
+  endTurn(): Promise<void>;
+  cancelTurn(): Promise<void>;
+}
+
+function pttEngine(server: boolean): PttEngine {
+  return server ? getServerConverse() : getOrchestrator();
+}
+
+/** What the hands-free seam drives — Parly's orchestrator or the server engine.
+ *  Both have these methods under the same names. */
+interface HfEngine {
+  enableHandsFree(pairA: string, pairB: string): Promise<void>;
+  disableHandsFree(): Promise<void>;
+  pauseHandsFree(): Promise<void>;
+  resumeHandsFree(): Promise<void>;
+  skipHfTurn(): void;
+  isHandsFreeActive(): boolean;
+}
+
+function hfEngine(server: boolean): HfEngine {
+  return server ? getServerHandsFree() : getOrchestrator();
+}
+
 /** Delay before prewarm after a key/model change — absorbs typing bursts. */
 const PREWARM_DEBOUNCE_MS = 500;
 /** Delay before silently validating a key the user never verified. */
@@ -51,9 +84,18 @@ const BACKGROUND_VALIDATE_DELAY_MS = 800;
 
 export function ConversationScreen({ navigation, variant = 'ptt' }: Props): React.JSX.Element {
   const insets = useSafeAreaInsets();
+  const mixedSpeech = useSettingsStore(s => s.mixedSpeech);
+  const setMixedSpeech = useSettingsStore(s => s.setMixedSpeech);
   const personA = useSettingsStore(s => s.personA);
   const personB = useSettingsStore(s => s.personB);
   const setPersonLanguage = useSettingsStore(s => s.setPersonLanguage);
+  // Both tabs run on the BharatConnect server — Gnani listens and speaks, Qwen
+  // translates — once config.ts points at it. No Mistral key then. Hands-free
+  // needs Gnani to hear BOTH languages in one request, so a pair Gnani cannot
+  // cover (say Hindi ↔ Spanish) stays on Parly's own Mistral pipeline.
+  const hfOnServer =
+    CONVERSE_ON_SERVER && variant === 'handsfree' && pairOnServer(personA.language, personB.language);
+  const serverMode = CONVERSE_ON_SERVER && (variant === 'ptt' || hfOnServer);
   const apiKey = useSettingsStore(s => s.mistralApiKey);
   const keyStatus = useSettingsStore(s => s.keyStatus);
   const setKeyStatus = useSettingsStore(s => s.setKeyStatus);
@@ -81,6 +123,7 @@ export function ConversationScreen({ navigation, variant = 'ptt' }: Props): Reac
   // a real network request, so it's debounced and gated on a validated key —
   // typing a 64-char key must not fire dozens of doomed completions.
   useEffect(() => {
+    if (serverMode) return;
     getOrchestrator().configure({
       apiKey,
       translationModel,
@@ -95,13 +138,13 @@ export function ConversationScreen({ navigation, variant = 'ptt' }: Props): Reac
       void getOrchestrator().prewarm().catch(() => {});
     }, PREWARM_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [apiKey, translationModel, transcriptionMode, people, keyStatus]);
+  }, [serverMode, apiKey, translationModel, transcriptionMode, people, keyStatus]);
 
   // A key that was pasted but never verified gets checked silently in the
   // background: garbage flips to 'invalid' (banner + disabled discs) instead
   // of sailing into a failing first turn under a green badge.
   useEffect(() => {
-    if (!apiKey || keyStatus !== 'unvalidated' || networkState === 'offline') return;
+    if (serverMode || !apiKey || keyStatus !== 'unvalidated' || networkState === 'offline') return;
     let cancelled = false;
     const timer = setTimeout(() => {
       void validateMistralApiKey(apiKey).then(result => {
@@ -115,14 +158,18 @@ export function ConversationScreen({ navigation, variant = 'ptt' }: Props): Reac
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [apiKey, keyStatus, networkState, setKeyStatus]);
+  }, [serverMode, apiKey, keyStatus, networkState, setKeyStatus]);
 
   // Tear down live audio when the app backgrounds or the screen unmounts —
   // leaving the mic/WS open in either state would silently capture audio.
   // HF tears down its session; a mid-flight PTT turn is cancelled quietly.
   useEffect(() => {
     const teardown = () => {
-      if (getOrchestrator().isHandsFreeActive()) {
+      if (serverMode && variant === 'handsfree') {
+        void getServerHandsFree().disableHandsFree().catch(() => {});
+      } else if (serverMode) {
+        void getServerConverse().cancelTurn().catch(() => {});
+      } else if (getOrchestrator().isHandsFreeActive()) {
         void getOrchestrator().disableHandsFree().catch(() => {});
       } else {
         void getOrchestrator().cancelTurn().catch(() => {});
@@ -136,7 +183,7 @@ export function ConversationScreen({ navigation, variant = 'ptt' }: Props): Reac
       sub.remove();
       teardown();
     };
-  }, []);
+  }, [serverMode, variant]);
 
   const activeTurn = useMemo(
     () => turns.find(t => t.id === activeTurnId) ?? null,
@@ -183,11 +230,11 @@ export function ConversationScreen({ navigation, variant = 'ptt' }: Props): Reac
     }
   }, [hfActiveSpeaker]);
 
-  const noKey = apiKey.trim() === '';
+  const noKey = !serverMode && apiKey.trim() === '';
   // Discs disable for a MISSING or definitively INVALID key. A merely
   // unverified key stays usable — background validation is racing, and an
   // offline start with a good stored key must not lock the table.
-  const keyBlocked = noKey || keyStatus === 'invalid';
+  const keyBlocked = noKey || (!serverMode && keyStatus === 'invalid');
   const hasLanguages = Boolean(personA.language && personB.language);
   const showHfToggle =
     HANDS_FREE_ENABLED && variant === 'handsfree' && !keyBlocked && hasLanguages;
@@ -203,18 +250,18 @@ export function ConversationScreen({ navigation, variant = 'ptt' }: Props): Reac
     }
     if (networkState === 'offline' && !isHfPaused) {
       setIsHfPaused(true);
-      void getOrchestrator().pauseHandsFree().catch(err => {
+      void hfEngine(hfOnServer).pauseHandsFree().catch(err => {
         console.warn('[Conversation] pauseHandsFree failed:', err);
       });
     } else if (networkState === 'online' && isHfPaused) {
-      void getOrchestrator()
+      void hfEngine(hfOnServer)
         .resumeHandsFree()
         .then(() => setIsHfPaused(false))
         .catch(err => {
           console.warn('[Conversation] resumeHandsFree failed:', err);
         });
     }
-  }, [networkState, isHfActive, isHfPaused]);
+  }, [networkState, isHfActive, isHfPaused, hfOnServer]);
 
   const handleMicPressIn = (speakerId: PersonId) => {
     if (keyBlocked || isHfActive || variant === 'handsfree') return;
@@ -230,14 +277,14 @@ export function ConversationScreen({ navigation, variant = 'ptt' }: Props): Reac
       return;
     }
 
-    void getOrchestrator()
+    void pttEngine(serverMode)
       .beginTurn({ speakerId, sourceLang, targetLang })
       .catch(err => console.warn('[Conversation] turn failed:', err));
   };
 
   const handleMicPressOut = () => {
     if (isHfActive) return;
-    void getOrchestrator().endTurn().catch(err => {
+    void pttEngine(serverMode).endTurn().catch(err => {
       console.warn('[Conversation] endTurn failed:', err);
     });
   };
@@ -248,42 +295,50 @@ export function ConversationScreen({ navigation, variant = 'ptt' }: Props): Reac
   const handleInterrupt = useCallback(() => {
     haptics.tick();
     if (isHfActive) {
-      getOrchestrator().skipHfTurn();
+      hfEngine(hfOnServer).skipHfTurn();
       return;
     }
-    void getOrchestrator().cancelTurn().catch(err => {
+    void pttEngine(serverMode).cancelTurn().catch(err => {
       console.warn('[Conversation] cancelTurn failed:', err);
     });
-  }, [isHfActive]);
+  }, [isHfActive, serverMode, hfOnServer]);
 
   const handleHfTap = useCallback(() => {
     if (!isHfActive) return;
-    void getOrchestrator().disableHandsFree().catch(err => {
+    void hfEngine(hfOnServer).disableHandsFree().catch(err => {
       console.warn('[Conversation] disableHandsFree failed:', err);
     });
-  }, [isHfActive]);
+  }, [isHfActive, hfOnServer]);
 
   const handleToggleHf = useCallback(() => {
     // Any deliberate press on the seam control proves the reader found it —
     // retire the discoverability hint for good.
     if (!hfDiscovered) setHfDiscovered(true);
     if (isHfActive) {
-      void getOrchestrator().disableHandsFree().catch(err => {
+      void hfEngine(hfOnServer).disableHandsFree().catch(err => {
         console.warn('[Conversation] disableHandsFree failed:', err);
       });
     } else {
       if (!personA.language || !personB.language) return;
-      void getOrchestrator()
+      void hfEngine(hfOnServer)
         .enableHandsFree(personA.language, personB.language)
         .catch(err => {
           console.warn('[Conversation] enableHandsFree failed:', err);
         });
     }
-  }, [isHfActive, personA.language, personB.language, hfDiscovered, setHfDiscovered]);
+  }, [isHfActive, hfOnServer, personA.language, personB.language, hfDiscovered, setHfDiscovered]);
 
   const onPickLanguage = (code: string) => {
-    if (pickerSlot === 'partner') setPersonLanguage('B', code);
-    else if (pickerSlot === 'self') setPersonLanguage('A', code);
+    // Hands-free keeps every language in the picker (including the one the
+    // other side already uses). Picking the other side's language swaps the
+    // two sides instead of creating an identical pair.
+    if (pickerSlot === 'partner') {
+      if (variant === 'handsfree' && code === personA.language) setPersonLanguage('A', personB.language);
+      setPersonLanguage('B', code);
+    } else if (pickerSlot === 'self') {
+      if (variant === 'handsfree' && code === personB.language) setPersonLanguage('B', personA.language);
+      setPersonLanguage('A', code);
+    }
     setPickerSlot(null);
   };
 
@@ -317,7 +372,7 @@ export function ConversationScreen({ navigation, variant = 'ptt' }: Props): Reac
         body: 'Connect Parly to its brain.',
         hint: "Tap here — we'll walk you through it.",
       }
-    : keyStatus === 'invalid'
+    : !serverMode && keyStatus === 'invalid'
     ? {
         eyebrow: 'CONNECTION PROBLEM',
         body: "That key isn't working.",
@@ -351,6 +406,7 @@ export function ConversationScreen({ navigation, variant = 'ptt' }: Props): Reac
             disabled={discDisabled('person_b')}
             firstRun={firstRun}
             firstHfRun={hfFirstRun}
+            hideDisc={variant === 'handsfree'}
             onPressIn={() => handleMicPressIn('person_b')}
             onPressOut={handleMicPressOut}
             onTap={handleHfTap}
@@ -401,6 +457,7 @@ export function ConversationScreen({ navigation, variant = 'ptt' }: Props): Reac
           disabled={discDisabled('person_a')}
           firstRun={firstRun}
           firstHfRun={hfFirstRun}
+          hideDisc={variant === 'handsfree'}
           onPressIn={() => handleMicPressIn('person_a')}
           onPressOut={handleMicPressOut}
           onTap={handleHfTap}
@@ -450,6 +507,23 @@ export function ConversationScreen({ navigation, variant = 'ptt' }: Props): Reac
                 {personB.language ? getLanguage(personB.language).name : 'Pick'}
               </Text>
             </Pressable>
+            {/* Mixed speech: hear the language AND English together (Hindi + English …). */}
+            {serverMode && pairCanMix(personA.language, personB.language) && (
+              <Pressable
+                style={[styles.mixChip, mixedSpeech && styles.mixChipOn]}
+                onPress={() => {
+                  haptics.tick();
+                  setMixedSpeech(!mixedSpeech);
+                }}
+                hitSlop={8}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: mixedSpeech }}
+                accessibilityLabel="Mixed speech with English">
+                <Text variant="caption" tone={mixedSpeech ? 'fgInk' : 'fgMuted'}>
+                  +EN
+                </Text>
+              </Pressable>
+            )}
           </View>
         </View>
       )}
@@ -489,14 +563,14 @@ export function ConversationScreen({ navigation, variant = 'ptt' }: Props): Reac
       <LanguagePickerSheet
         side="top"
         visible={pickerSlot === 'partner'}
-        excludeCode={personA.language}
+        excludeCode={variant === 'handsfree' ? undefined : personA.language}
         onSelect={onPickLanguage}
         onClose={() => setPickerSlot(null)}
       />
       <LanguagePickerSheet
         side="bottom"
         visible={pickerSlot === 'self'}
-        excludeCode={personB.language}
+        excludeCode={variant === 'handsfree' ? undefined : personB.language}
         onSelect={onPickLanguage}
         onClose={() => setPickerSlot(null)}
       />
@@ -540,6 +614,17 @@ const styles = StyleSheet.create({
   },
   langSide: { minWidth: 88, alignItems: 'center', paddingHorizontal: space.sm },
   langSwap: { paddingHorizontal: space.sm },
+  mixChip: {
+    marginLeft: space.xs,
+    paddingHorizontal: space.sm,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairlineStrong,
+  },
+  mixChipOn: { backgroundColor: color.accentA, borderColor: color.accentA },
 
   bannerWrap: {
     position: 'absolute',

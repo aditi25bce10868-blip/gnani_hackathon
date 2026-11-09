@@ -752,3 +752,54 @@ describe('SileroVadService energy hysteresis', () => {
     }
   });
 });
+
+describe('SileroVadService — modelContext (Silero v5 reads 64 samples of history)', () => {
+  const inputsOf = (session: OrtSession): { data: Float32Array; dims: number[] }[] =>
+    (session.run as jest.Mock).mock.calls.map(c => c[0].input);
+
+  async function feedTwo(cfg: { modelContext?: boolean }): Promise<{ data: Float32Array; dims: number[] }[]> {
+    const session = makeOrtSession([]);
+    const svc = new SileroVadService(cfg, makeSessionFactory(session));
+    await svc.initialize();
+    await new Promise<void>(r => {
+      svc.feedFrame(voice());
+      svc.feedFrame(silence());
+      setTimeout(r, 50);
+    });
+    return inputsOf(session);
+  }
+
+  it('is off by default: the model still gets bare 512-sample frames', async () => {
+    const [first] = await feedTwo({});
+    expect(first.dims).toEqual([1, VAD_FRAME_SAMPLES]);
+    expect(first.data).toHaveLength(VAD_FRAME_SAMPLES);
+  });
+
+  it('prepends the last 64 samples of the previous frame (zeros for the very first)', async () => {
+    const [first, second] = await feedTwo({ modelContext: true });
+    expect(first.dims).toEqual([1, 576]);
+    expect(Array.from(first.data.slice(0, 64)).every(v => v === 0)).toBe(true);
+
+    const prevTail = Array.from(first.data.slice(576 - 64)); // tail of frame 1 = what frame 2 must start with
+    expect(second.dims).toEqual([1, 576]);
+    expect(Array.from(second.data.slice(0, 64))).toEqual(prevTail);
+    expect(prevTail.some(v => v !== 0)).toBe(true); // it really was the voiced frame
+  });
+
+  it('starts clean after resetState()', async () => {
+    const session = makeOrtSession([]);
+    const svc = new SileroVadService({ modelContext: true }, makeSessionFactory(session));
+    await svc.initialize();
+    await new Promise<void>(r => {
+      svc.feedFrame(voice());
+      setTimeout(r, 30);
+    });
+    svc.resetState();
+    await new Promise<void>(r => {
+      svc.feedFrame(silence());
+      setTimeout(r, 30);
+    });
+    const last = inputsOf(session).pop() as { data: Float32Array };
+    expect(Array.from(last.data.slice(0, 64)).every(v => v === 0)).toBe(true);
+  });
+});

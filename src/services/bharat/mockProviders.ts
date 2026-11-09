@@ -88,6 +88,14 @@ export class MockTranslateProvider implements TranslateProvider {
       detectedLang: detected,
     };
   }
+
+  async translateMany(texts: readonly string[], sourceLang: string, targetLang: string): Promise<string[]> {
+    const out: string[] = [];
+    for (const text of texts) {
+      out.push((await this.translate({ text, sourceLang, targetLang })).text);
+    }
+    return out;
+  }
 }
 
 export class MockSttProvider implements SttProvider {

@@ -43,6 +43,14 @@ describe('MockTranslateProvider', () => {
   });
 });
 
+describe('MockTranslateProvider.translateMany', () => {
+  test('keeps order and length', async () => {
+    const out = await new MockTranslateProvider().translateMany(['Thank you', 'x'], 'en', 'hi');
+    expect(out).toHaveLength(2);
+    expect(out[0]).toBe('धन्यवाद');
+  });
+});
+
 describe('MockSttProvider', () => {
   test('returns a phrase in the requested language', async () => {
     const stt = new MockSttProvider();

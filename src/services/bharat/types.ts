@@ -13,6 +13,11 @@ export interface TranslateRequest {
   /** BCP-47 short code, or AUTO_LANG. */
   readonly sourceLang: string;
   readonly targetLang: string;
+  /** Earlier lines of the conversation, oldest first (Converse tab). Requests
+   *  that carry context are never served from the cache. */
+  readonly context?: readonly string[];
+  /** Other languages the speaker mixes in, e.g. ['en'] for Hindi + English. */
+  readonly sourceMix?: readonly string[];
 }
 
 export interface TranslateResult {
@@ -26,6 +31,9 @@ export interface TranslateProvider {
   readonly name: string;
   readonly isMock: boolean;
   translate(req: TranslateRequest): Promise<TranslateResult>;
+  /** Several texts that belong together (e.g. everything in one camera photo),
+   *  translated in ONE request so free-tier quotas are not burned per block. */
+  translateMany(texts: readonly string[], sourceLang: string, targetLang: string): Promise<string[]>;
 }
 
 export interface SttResult {

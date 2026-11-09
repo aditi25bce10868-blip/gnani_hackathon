@@ -11,6 +11,9 @@ interface BharatSystemNative {
   getInitialSharedText(): Promise<string | null>;
   getClipboardText(): Promise<string | null>;
   setClipboardText(text: string): Promise<boolean>;
+  /** Plays a base64 WAV; resolves when it finishes or is stopped. */
+  playWavBase64?(base64: string): Promise<boolean>;
+  stopPlayback?(): void;
 }
 
 const SHARED_TEXT_EVENT = 'BharatSharedText';
@@ -43,6 +46,20 @@ export async function writeClipboard(text: string): Promise<boolean> {
     return await native.setClipboardText(text);
   } catch {
     return false;
+  }
+}
+
+/** Plays a base64 WAV through the speaker. Rejects when it cannot. */
+export async function playWav(base64: string): Promise<void> {
+  if (!native?.playWavBase64) throw new Error('No audio player in this build.');
+  await native.playWavBase64(base64);
+}
+
+export function stopWav(): void {
+  try {
+    native?.stopPlayback?.();
+  } catch {
+    // nothing is playing
   }
 }
 

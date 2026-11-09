@@ -22,7 +22,8 @@ import { ScreenHeader } from '../bharat/ScreenHeader';
 import { stopSpeaking } from '../bharat/speak';
 
 const MAX_CHARS = 2000;
-const LIVE_DEBOUNCE_MS = 600;
+// Each pause is one request against a free daily quota, so wait a little longer.
+const LIVE_DEBOUNCE_MS = 900;
 const RECENT_SETTLE_MS = 2000;
 
 export interface IncomingText {

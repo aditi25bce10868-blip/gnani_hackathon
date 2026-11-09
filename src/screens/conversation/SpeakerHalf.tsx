@@ -117,6 +117,9 @@ export interface SpeakerHalfProps {
   readonly firstRun: boolean;
   /** Show the HF welcome card ("Just speak. Tap any disc to exit."). */
   readonly firstHfRun?: boolean;
+  /** Hands-free tab: the discs do nothing there (the VAD takes the turns), so
+   *  they are not drawn — the seam control is the one microphone. */
+  readonly hideDisc?: boolean;
   readonly onPressIn: () => void;
   readonly onPressOut: () => void;
   /** Fired on a single tap in HF mode — typically exits hands-free. */
@@ -142,6 +145,7 @@ export function SpeakerHalf({
   disabled,
   firstRun,
   firstHfRun = false,
+  hideDisc = false,
   onPressIn,
   onPressOut,
   onTap,
@@ -341,9 +345,11 @@ export function SpeakerHalf({
               <Text variant="serifHero" tone="fgFaint" style={styles.welcomeHeadline}>
                 {t.justSpeak}
               </Text>
-              <Text variant="serifSmall" tone="fgMuted" style={styles.welcomeHfHint}>
-                {t.tapToExit}
-              </Text>
+              {!hideDisc && (
+                <Text variant="serifSmall" tone="fgMuted" style={styles.welcomeHfHint}>
+                  {t.tapToExit}
+                </Text>
+              )}
             </View>
           )}
           {notice !== null && (
@@ -412,6 +418,7 @@ export function SpeakerHalf({
 
       <View style={styles.spacer} />
 
+      {!hideDisc && (
       <Animated.View style={[styles.buttonSlot, unroutedFadeStyle]}>
         <PTTButton
           label={speakerLanguage || '—'}
@@ -426,6 +433,7 @@ export function SpeakerHalf({
           onTap={onTap}
         />
       </Animated.View>
+      )}
 
       <View style={[styles.edgeRow, { paddingBottom: edgePadding }]}>
         {edgeContent}
