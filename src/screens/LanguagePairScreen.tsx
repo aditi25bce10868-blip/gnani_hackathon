@@ -93,7 +93,7 @@ export function LanguagePairScreen({ navigation }: Props): React.JSX.Element {
       <View style={styles.topBar}>
         <View style={styles.brandRow}>
           <Image
-            source={require('../assets/bharatconnect-icon-1024-india.png')}
+            source={require('../../assets/bharatconnect-icon-1024-india.png')}
             style={styles.miniLogo}
             resizeMode="contain"
           />
@@ -127,7 +127,7 @@ export function LanguagePairScreen({ navigation }: Props): React.JSX.Element {
                 { transform: [{ translateY: floatAnim }] },
               ]}>
               <Image
-                source={require('../assets/bharatconnect-icon-1024-india.png')}
+                source={require('../../assets/bharatconnect-icon-1024-india.png')}
                 style={styles.heroLogo}
                 resizeMode="contain"
               />
@@ -218,7 +218,7 @@ export function LanguagePairScreen({ navigation }: Props): React.JSX.Element {
         {/* Bottom Closing CTA */}
         <View style={styles.closingSection}>
           <Image
-            source={require('../assets/bharatconnect-icon-1024-india.png')}
+            source={require('../../assets/bharatconnect-icon-1024-india.png')}
             style={styles.closingLogo}
             resizeMode="contain"
           />
