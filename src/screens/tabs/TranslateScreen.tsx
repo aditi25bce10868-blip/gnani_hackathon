@@ -15,7 +15,7 @@ import { AUTO_LANG } from '../../services/bharat/types';
 import { readClipboard } from '../../services/native/bharatSystem';
 import { useBharatStore, type RecentTranslation } from '../../store/bharatStore';
 import type { MainNavigation } from '../../navigation/types';
-import { DuskBackdrop, Surface, Text, color, font, haptics, space } from '../../ui';
+import { DuskBackdrop, Surface, Text, color, font, haptics, radius, space } from '../../ui';
 import { LangPairBar, useLangPicker } from '../bharat/LangPairBar';
 import { ResultCard } from '../bharat/ResultCard';
 import { ScreenHeader } from '../bharat/ScreenHeader';
@@ -52,6 +52,7 @@ export function TranslateScreen({ navigation, incoming }: Props): React.JSX.Elem
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [clip, setClip] = useState('');
+  const [focused, setFocused] = useState(false);
   const run = useRef(0);
   const lastClipSeen = useRef('');
   const recentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -145,6 +146,35 @@ export function TranslateScreen({ navigation, incoming }: Props): React.JSX.Elem
     setInput(output);
   };
 
+  const doTranslate = useCallback(async () => {
+    const text = input.trim();
+    if (text === '') return;
+    haptics.tap();
+    const id = ++run.current;
+    setBusy(true);
+    try {
+      const out = await translateProvider.translate({
+        text,
+        sourceLang: pair.source,
+        targetLang: pair.target,
+      });
+      if (id !== run.current) return;
+      setOutput(out.text);
+      setDetected(out.detectedLang ?? detectLanguage(text));
+      setError('');
+      addRecent({
+        sourceText: text,
+        translatedText: out.text,
+        sourceLang: out.detectedLang ?? pair.source,
+        targetLang: pair.target,
+      });
+    } catch (e) {
+      if (id === run.current) setError(errorMessage(e));
+    } finally {
+      if (id === run.current) setBusy(false);
+    }
+  }, [input, pair.source, pair.target, addRecent]);
+
   const reuseRecent = (r: RecentTranslation) => {
     haptics.tick();
     setSource('translate', AUTO_LANG);
@@ -194,7 +224,7 @@ export function TranslateScreen({ navigation, incoming }: Props): React.JSX.Elem
           </Pressable>
         ) : null}
 
-        <Surface style={styles.inputCard}>
+        <View style={[styles.inputCard, focused && styles.inputCardFocused]}>
           {pair.source === AUTO_LANG && detected !== '' ? (
             <Text variant="serifSmall" tone="fgFaint" style={styles.detected}>
               detected · {getLanguage(detected).name}
@@ -203,21 +233,37 @@ export function TranslateScreen({ navigation, incoming }: Props): React.JSX.Elem
           <TextInput
             value={input}
             onChangeText={t => setInput(t.slice(0, MAX_CHARS))}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             placeholder="Type, paste, or share text here"
-            placeholderTextColor={color.fgGhost}
+            placeholderTextColor={color.textMuted}
+            selectionColor={color.accent}
+            cursorColor={color.accent}
             multiline
             textAlignVertical="top"
             style={styles.input}
             accessibilityLabel="Text to translate"
           />
           {input !== '' ? (
-            <Pressable onPress={() => setInput('')} hitSlop={10} style={styles.clear} accessibilityRole="button">
-              <Text variant="serif" tone="fgMuted">
+            <Pressable onPress={() => setInput('')} hitSlop={6} style={styles.clearBtn} accessibilityRole="button">
+              <Text variant="serifSmall" tone="fgMuted">
                 Clear
               </Text>
             </Pressable>
           ) : null}
-        </Surface>
+        </View>
+
+        {/* Primary Translate button: only one filled colored button on screen */}
+        <Pressable
+          style={[styles.translateBtn, (input.trim() === '' || busy) && styles.translateBtnDisabled]}
+          disabled={input.trim() === '' || busy}
+          onPress={() => void doTranslate()}
+          accessibilityRole="button"
+          accessibilityLabel="Translate">
+          <Text variant="button" style={styles.translateBtnText}>
+            {busy ? 'Translating…' : 'Translate'}
+          </Text>
+        </Pressable>
 
         {error !== '' ? (
           <Text variant="bodySmall" tone="error" style={styles.error}>
@@ -230,7 +276,7 @@ export function TranslateScreen({ navigation, incoming }: Props): React.JSX.Elem
             caption="Translation"
             lang={pair.target}
             text={output}
-            accent={color.accentB}
+            accent={color.accentSoft}
             busy={busy}
             placeholder="Translating…"
           />
@@ -274,28 +320,63 @@ const styles = StyleSheet.create({
     marginHorizontal: space.xl,
     marginBottom: space.md,
     padding: space.md,
-    borderRadius: 16,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: color.hairlineStrong,
+    borderColor: color.border,
     backgroundColor: color.bgElevated,
   },
   clipEyebrow: { letterSpacing: 2, marginBottom: 4 },
-  inputCard: { marginHorizontal: space.xl, padding: space.lg },
+  inputCard: {
+    marginHorizontal: space.xl,
+    padding: space.lg,
+    backgroundColor: color.bgSurface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.border,
+  },
+  inputCardFocused: {
+    borderColor: color.focusRing,
+  },
   detected: { marginBottom: space.xs },
   input: {
     ...font.displayCompact,
-    color: color.fg,
+    color: color.textSecondary,
     minHeight: 110,
     maxHeight: 220,
     padding: 0,
   },
-  clear: { alignSelf: 'flex-end', marginTop: space.sm },
+  clearBtn: {
+    alignSelf: 'flex-end',
+    marginTop: space.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.borderStrong,
+  },
+  translateBtn: {
+    marginHorizontal: space.xl,
+    marginTop: space.md,
+    paddingVertical: 14,
+    backgroundColor: color.primary,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  translateBtnDisabled: {
+    opacity: 0.45,
+  },
+  translateBtnText: {
+    color: color.textOnPrimary,
+    fontWeight: '600',
+    fontSize: 15,
+  },
   error: { marginHorizontal: space.xl, marginTop: space.md },
   recents: { marginTop: space.lg, paddingHorizontal: space.xl },
   recentsHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: space.xs },
   recent: {
     paddingVertical: space.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: color.hairline,
+    borderTopWidth: 1,
+    borderTopColor: color.border,
   },
 });

@@ -24,7 +24,6 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Circle, Defs, Mask, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { color, font, motion, radius } from '../theme';
 import { Waveform } from '../animations/Waveform';
@@ -261,13 +260,6 @@ export function PTTButton({
 
         {/* The disc. */}
         <Animated.View style={[disk, diskStyle, disabled && styles.disabled]}>
-          <LinearGradient
-            pointerEvents="none"
-            colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.00)']}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
           {/* Inner halo. */}
           <View style={styles.haloLayer} pointerEvents="none">
             <Svg width={HALO_SIZE} height={HALO_SIZE}>

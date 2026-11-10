@@ -476,7 +476,7 @@ export function SettingsScreen({ navigation }: Props): React.JSX.Element {
           </Section>
 
           <Text variant="serif" tone="fgGhost" style={styles.versionTag}>
-            PARLY — DUSK
+            BHARATCONNECT
           </Text>
       </ScrollView>
     </View>
@@ -543,9 +543,9 @@ const styles = StyleSheet.create({
   verifyBtn: {
     paddingHorizontal: space.md,
     paddingVertical: 8,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: color.hairlineStrong,
+    borderColor: color.borderStrong,
     minWidth: 100,
     alignItems: 'center',
     justifyContent: 'center',
@@ -602,22 +602,22 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   modelRowPressed: {
-    backgroundColor: color.surface2,
+    backgroundColor: color.bgElevated,
   },
   modelRowSelected: {
-    backgroundColor: color.surface1,
+    backgroundColor: color.bgElevated,
   },
   modelRadio: {
     width: 14,
     height: 14,
     borderRadius: 7,
     borderWidth: 1.5,
-    borderColor: color.hairlineStrong,
+    borderColor: color.borderStrong,
     marginRight: space.sm,
   },
   modelRadioSelected: {
-    borderColor: color.ok,
-    backgroundColor: color.ok,
+    borderColor: color.accent,
+    backgroundColor: color.accent,
   },
   versionTag: {
     textAlign: 'center',

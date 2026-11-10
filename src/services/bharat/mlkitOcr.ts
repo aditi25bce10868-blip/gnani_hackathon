@@ -4,7 +4,7 @@
 // runs before it is installed — the Camera tab then reports 'unavailable'
 // instead of crashing. Install:  npm i @react-native-ml-kit/text-recognition
 //
-// To read Tamil / Telugu / Bengali / … add a CloudOcrProvider (Bhashini OCR or
+// To read Tamil / Telugu / Bengali / … add a CloudOcrProvider (BharatConnect / cloud OCR or
 // Google Cloud Vision) and have `recognize` fall back to it when
 // `ocrScriptsFor(lang)` is empty.
 

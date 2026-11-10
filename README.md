@@ -1,4 +1,4 @@
-# Parly
+# BharatConnect
 
 **Real-time conversation translator for two people sharing one phone.**
 

@@ -1,4 +1,4 @@
-// Voice tab — BHASHINI-style speech-to-speech.
+// Voice tab — BharatConnect speech-to-speech.
 // Pick two languages, tap the mic, speak, tap again: the app shows what it
 // heard, the translation, and reads the translation aloud. One direction at a
 // time; swap to answer. (Two people, one phone → the Converse tab.)
@@ -227,7 +227,7 @@ function MicButton({ stage, onPress }: { readonly stage: Stage; readonly onPress
         {working ? (
           <ActivityIndicator color={color.fgMuted} />
         ) : (
-          <MicGlyph color={listening ? color.fgInk : color.fg} size={34} />
+          <MicGlyph color={listening ? color.textOnPrimary : color.accentSoft} size={34} />
         )}
       </Pressable>
     </View>
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
     width: MIC,
     height: MIC,
     borderRadius: MIC / 2,
-    backgroundColor: color.accentARing,
+    backgroundColor: color.focusRing,
   },
   mic: {
     width: MIC,
@@ -257,9 +257,9 @@ const styles = StyleSheet.create({
     borderRadius: MIC / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: color.surface3,
+    backgroundColor: color.bgElevated,
     borderWidth: 1,
-    borderColor: color.discBorder,
+    borderColor: color.borderStrong,
   },
-  micLive: { backgroundColor: color.accentA, borderColor: color.accentA },
+  micLive: { backgroundColor: color.primary, borderColor: color.primary },
 });

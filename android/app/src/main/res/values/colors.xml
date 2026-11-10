@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Adaptive-icon background fallback. The active background lives at
+         drawable/ic_launcher_background.xml (the Dusk gradient + halos).
+         This colour is kept only as a near-equivalent constant for
+         legacy launchers that still reference @color/ic_launcher_background. -->
+    <color name="ic_launcher_background">#040406</color>
+</resources>

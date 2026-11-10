@@ -1,10 +1,10 @@
 // MainTabs — BharatConnect's five-tab shell.
 //
-//   Converse   · two people, one phone, tap/hold-to-talk   (Parly conversation)
-//   Voice      · speak once, hear it translated            (BHASHINI-style)
-//   Translate  · type / paste / share, auto-detect, live   (BHASHINI + Google style, one tab)
+//   Converse   · two people, one phone, tap/hold-to-talk   (BharatConnect conversation)
+//   Voice      · speak once, hear it translated            (BharatConnect voice)
+//   Translate  · type / paste / share, auto-detect, live   (BharatConnect translate)
 //   Camera     · point at any printed text, read it translated
-//   Hands-free · Converse with on-device VAD turn-taking   (Parly hands-free; quiet places)
+//   Hands-free · Converse with on-device VAD turn-taking   (BharatConnect hands-free; quiet places)
 //
 // Only the ACTIVE tab is mounted. That is deliberate: every tab that touches
 // the microphone tears its audio down on unmount, so switching tabs can never
@@ -86,7 +86,7 @@ export function MainTabs({ navigation }: Props): React.JSX.Element {
         <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
           {TABS.map(t => {
             const active = t.id === tab;
-            const tint = active ? color.accentA : color.fgFaint;
+            const tint = active ? color.accent : color.fgFaint;
             return (
               <Pressable
                 key={t.id}
@@ -116,9 +116,9 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   bar: {
     flexDirection: 'row',
-    backgroundColor: color.bgElevated,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: color.hairlineStrong,
+    backgroundColor: color.bgSurface,
+    borderTopWidth: 1,
+    borderTopColor: color.border,
     paddingTop: 8,
   },
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 2 },

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Text, space } from '../../ui';
+import { Text, color, radius, space } from '../../ui';
 
 interface Props {
   readonly eyebrow: string;
@@ -17,8 +17,13 @@ export function ScreenHeader({ eyebrow, title, onSettings, engineNote }: Props):
         <Text variant="caption" tone="fgGhost" style={styles.eyebrow}>
           {eyebrow}
         </Text>
-        <Pressable onPress={onSettings} hitSlop={14} accessibilityRole="button" accessibilityLabel="Settings">
-          <Text variant="serif" tone="fgFaint">
+        <Pressable
+          style={styles.settingsBtn}
+          onPress={onSettings}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Settings">
+          <Text variant="serifSmall" tone="fgMuted">
             settings
           </Text>
         </Pressable>
@@ -39,6 +44,13 @@ const styles = StyleSheet.create({
   root: { paddingHorizontal: space.xl, paddingTop: space.md, paddingBottom: space.md },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   eyebrow: { letterSpacing: 2.4 },
+  settingsBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.borderStrong,
+  },
   title: { marginTop: space.xs, fontSize: 26, lineHeight: 32 },
   note: { marginTop: space.xxs },
 });

@@ -214,8 +214,10 @@ export function LanguagePickerSheet({
             {side !== 'top' && (
               <TextInput
                 style={styles.search}
-                placeholder="Search — English, Español, 日本語…"
-                placeholderTextColor={color.fgGhost}
+                placeholder="Search — हिन्दी, English, தமிழ்…"
+                placeholderTextColor={color.textMuted}
+                selectionColor={color.accent}
+                cursorColor={color.accent}
                 value={filter}
                 onChangeText={setFilter}
                 autoCapitalize="none"
@@ -287,22 +289,24 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '88%',
-    backgroundColor: color.bg,
+    backgroundColor: color.bgElevated,
     borderLeftWidth: 1,
     borderRightWidth: 1,
-    borderColor: color.hairline,
+    borderColor: color.border,
   },
   sheetBottom: {
     bottom: 0,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     borderTopWidth: 1,
+    borderTopColor: color.border,
   },
   sheetTop: {
     top: 0,
-    borderBottomLeftRadius: radius.xl,
-    borderBottomRightRadius: radius.xl,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
     borderBottomWidth: 1,
+    borderBottomColor: color.border,
   },
   contentUpright: {
     flex: 1,
@@ -328,13 +332,13 @@ const styles = StyleSheet.create({
     marginBottom: space.xs,
   },
   search: {
-    backgroundColor: color.surface1,
+    backgroundColor: color.bgSurface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: color.hairline,
+    borderColor: color.border,
     paddingHorizontal: space.md,
     paddingVertical: 12,
-    color: color.fg,
+    color: color.textPrimary,
     fontSize: 15,
   },
   list: {
@@ -357,7 +361,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   rowPressed: {
-    backgroundColor: color.surface2,
+    backgroundColor: color.bgSurface,
   },
   rowEmoji: {
     fontSize: 22,

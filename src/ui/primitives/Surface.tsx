@@ -32,13 +32,16 @@ export function Surface({
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: color.surface1,
-    borderRadius: radius.lg,
+    backgroundColor: color.bgSurface,
+    borderRadius: radius.md, // 12px for panels
     borderWidth: 1,
-    borderColor: color.hairline,
+    borderColor: color.border,
     padding: space.md,
   },
   inset: {
-    backgroundColor: color.surface2,
+    backgroundColor: color.bgElevated,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.border,
   },
 });

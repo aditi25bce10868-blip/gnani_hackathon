@@ -12,7 +12,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSettingsStore } from '../store/settingsStore';
 import { log } from '../services/log/logStore';
 import type { RootStackParamList } from '../navigation/types';
-import { Button, DuskBackdrop, Text, color, haptics, space } from '../ui';
+import { Button, DuskBackdrop, Text, color, haptics, radius, space } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'LanguagePair'>;
 
@@ -42,27 +42,41 @@ export function LanguagePairScreen({ navigation }: Props): React.JSX.Element {
 
       <View style={styles.hero}>
         <View style={styles.eyebrowRow}>
-          <View style={[styles.dot, { backgroundColor: color.accentB }]} />
-          <Text variant="caption" tone="fgGhost" style={styles.eyebrow}>
+          <View style={[styles.dot, { backgroundColor: color.accent }]} />
+          <Text variant="caption" tone="fg" style={styles.eyebrow}>
             BHARATCONNECT
           </Text>
-          <View style={[styles.dot, { backgroundColor: color.accentA }]} />
+          <View style={[styles.dot, { backgroundColor: color.accentSoft }]} />
         </View>
+
         <Text variant="serifHero" tone="fg" style={styles.headline}>
-          Welcome to{'\n'}BharatConnect.
+          Empowering India,{'\n'}In Every Tongue.
         </Text>
-        <Text variant="serif" tone="fgFaint" style={styles.subhead}>
-          Talk, type or point your camera — and understand every Indian language.
+
+        <Text variant="serif" tone="fgMuted" style={styles.subhead}>
+          Real-time voice AI, live conversation, and camera OCR translation across Indian languages.
         </Text>
+
+        {/* Indic Language Pills Showcase */}
+        <View style={styles.pillsContainer}>
+          {['हिन्दी', 'தமிழ்', 'తెలుగు', 'বাংলা', 'ಕನ್ನಡ', 'മലയാളം', 'मराठी', 'ગુજરાતી'].map((lang, idx) => (
+            <View key={idx} style={styles.langPill}>
+              <Text variant="caption" tone="fgMuted" style={styles.langPillText}>
+                {lang}
+              </Text>
+            </View>
+          ))}
+        </View>
       </View>
 
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, space.md) }]}>
-        <Button label="Start" onPress={onStart} style={styles.cta} />
+        <Button label="Launch BharatConnect →" onPress={onStart} style={styles.cta} />
         <Pressable
+          style={styles.settingsBtn}
           onPress={() => navigation.navigate('Settings')}
           accessibilityRole="button"
           accessibilityLabel="Open settings">
-          <Text variant="serif" tone="fgFaint" style={styles.settingsLink}>
+          <Text variant="serifSmall" tone="fgMuted">
             settings
           </Text>
         </Pressable>
@@ -75,11 +89,41 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.bg },
   hero: { flex: 1, justifyContent: 'center', paddingHorizontal: space.xl },
   eyebrowRow: { flexDirection: 'row', alignItems: 'center', marginBottom: space.md },
-  dot: { width: 5, height: 5, borderRadius: 3, marginHorizontal: 8, opacity: 0.85 },
-  eyebrow: { letterSpacing: 2.4 },
-  headline: { marginRight: space.sm },
-  subhead: { marginTop: space.md, paddingRight: space.xl, lineHeight: 22 },
+  dot: { width: 6, height: 6, borderRadius: 3, marginHorizontal: 8 },
+  eyebrow: { letterSpacing: 2.0, fontWeight: '700', fontSize: 10, color: color.accentSoft },
+  headline: { marginRight: space.sm, fontSize: 34, lineHeight: 42, fontWeight: '300' },
+  subhead: { marginTop: space.sm, paddingRight: space.md, lineHeight: 22 },
+  pillsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: space.lg,
+    gap: 8,
+  },
+  langPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: color.bgElevated,
+    borderWidth: 1,
+    borderColor: color.border,
+  },
+  langPillText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
   footer: { paddingHorizontal: space.xl, paddingTop: space.md, alignItems: 'center' },
-  cta: { alignSelf: 'stretch', paddingVertical: 16, marginBottom: space.md, borderRadius: 16 },
-  settingsLink: { paddingVertical: space.xs },
+  cta: {
+    alignSelf: 'stretch',
+    paddingVertical: 14,
+    marginBottom: space.md,
+    borderRadius: radius.pill,
+    backgroundColor: color.primary,
+  },
+  settingsBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.borderStrong,
+  },
 });

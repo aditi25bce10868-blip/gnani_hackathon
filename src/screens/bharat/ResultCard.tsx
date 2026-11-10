@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, Share, StyleSheet, View } from 'react-native';
 import { getLanguage } from '../../app/languages';
 import { writeClipboard } from '../../services/native/bharatSystem';
-import { Surface, Text, color, haptics, space } from '../../ui';
+import { Surface, Text, color, haptics, radius, space } from '../../ui';
 import { speakText } from './speak';
 
 interface Props {
@@ -102,8 +102,8 @@ export function ResultCard({
 
 function Action({ label, onPress }: { readonly label: string; readonly onPress: () => void }): React.JSX.Element {
   return (
-    <Pressable onPress={onPress} hitSlop={10} style={styles.action} accessibilityRole="button">
-      <Text variant="serif" tone="fgMuted">
+    <Pressable onPress={onPress} hitSlop={6} style={styles.action} accessibilityRole="button">
+      <Text variant="serifSmall" tone="fgMuted">
         {label}
       </Text>
     </Pressable>
@@ -115,8 +115,16 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', marginBottom: space.sm },
   dot: { width: 5, height: 5, borderRadius: 3, marginRight: 6 },
   spinner: { marginLeft: space.sm },
-  body: { minHeight: 30 },
+  body: { minHeight: 30, color: color.textPrimary },
   actions: { flexDirection: 'row', alignItems: 'center', marginTop: space.md },
-  action: { marginRight: space.xl, paddingVertical: 2 },
+  action: {
+    marginRight: space.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.borderStrong,
+    backgroundColor: 'transparent',
+  },
   note: { marginLeft: 'auto' },
 });

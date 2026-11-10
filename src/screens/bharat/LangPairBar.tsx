@@ -110,7 +110,7 @@ export function LangPairBar({
   return (
     <View>
       <View style={styles.row}>
-        <Chip code={source} accent={color.accentA} onPress={onPressSource} caption="from" />
+        <Chip code={source} accent={color.accent} onPress={onPressSource} caption="from" />
         <Pressable
           style={[styles.swap, swapDisabled && styles.swapDisabled]}
           disabled={swapDisabled}
@@ -124,15 +124,15 @@ export function LangPairBar({
           <Svg width={20} height={20} viewBox="0 0 24 24">
             <Path
               d="M7 7h12M16 4l3 3-3 3M17 17H5M8 14l-3 3 3 3"
-              stroke={color.fgMuted}
-              strokeWidth={1.7}
+              stroke={color.accentSoft}
+              strokeWidth={1.8}
               strokeLinecap="round"
               strokeLinejoin="round"
               fill="none"
             />
           </Svg>
         </Pressable>
-        <Chip code={target} accent={color.accentB} onPress={onPressTarget} caption="to" />
+        <Chip code={target} accent={color.accentSoft} onPress={onPressTarget} caption="to" />
       </View>
       {onAuto && source !== AUTO_LANG ? (
         <Pressable onPress={onAuto} hitSlop={10} style={styles.auto} accessibilityRole="button">
@@ -146,21 +146,21 @@ export function LangPairBar({
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'stretch', paddingHorizontal: space.xl },
+  row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.xl },
   chip: {
     flex: 1,
-    backgroundColor: color.surface1,
-    borderRadius: radius.lg,
+    backgroundColor: color.bgElevated,
+    borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: color.hairline,
+    borderColor: color.border,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
-    minHeight: 76,
+    minHeight: 62,
     justifyContent: 'center',
   },
   chipTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
   dot: { width: 5, height: 5, borderRadius: 3, marginRight: 6, opacity: 0.9 },
-  chipName: { fontSize: 18, lineHeight: 24 },
+  chipName: { fontSize: 16, lineHeight: 22, color: color.fg },
   swap: {
     alignSelf: 'center',
     width: 40,
@@ -169,7 +169,9 @@ const styles = StyleSheet.create({
     marginHorizontal: space.xs,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: color.surface2,
+    backgroundColor: color.bgElevated,
+    borderWidth: 1,
+    borderColor: color.borderStrong,
   },
   swapDisabled: { opacity: 0.35 },
   auto: { alignSelf: 'flex-start', paddingHorizontal: space.xl, paddingTop: space.xs },

@@ -1,81 +1,79 @@
-// Parly design tokens — "Dusk" theme.
-//
-// Aesthetic: two suns meeting at the edge of the day. The phone is the table.
-// Each speaker is a sun at one edge — warm bloom (apricot / peach / terracotta)
-// at the user's edge, cool bloom (periwinkle / seafoam / iris) at the partner's.
-// Their lights bleed toward the centre and meet in a soft seam — not a
-// divider, an encounter. Translation text stays pure white; colour lives in
-// the atmosphere, never in the words.
-//
-// Typography is bilingual in spirit: pure sans for translated content (the
-// reading), serif italic for the chrome (codes, labels, microcopy) — softens
-// the technical edge of a translator. Mono is gone.
+// BharatConnect design tokens — Calm Dark Theme.
+// Text-first translation app design system.
+// Readability matters more than decoration. Flat colors only.
 
 import { Platform } from 'react-native';
 
-// ── Color ────────────────────────────────────────────────────────────────────
+// ── Color System ─────────────────────────────────────────────────────────────
 
 export const color = {
-  // Surfaces — base is no longer pure black. A hair toward dusk so the warm
-  // and cool overlays read as warmth, not a colour cast. The full
-  // periwinkle→bg→peach sky is painted by `DuskBackdrop` via a real
-  // LinearGradient, so we don't carry any wash-tint tokens here anymore.
-  bg:        '#0B0B11',                  // base midnight, slightly violet-warm
-  bgElevated: '#0E0E14',                 // floating banners / sheets, same hue one step up
-  surface1:  'rgba(255,255,255,0.035)',  // card / pill
-  surface2:  'rgba(255,255,255,0.065)',  // hover / pressed
-  surface3:  'rgba(255,255,255,0.10)',   // filled state
-  hairline:  'rgba(255,255,255,0.06)',
-  hairlineStrong: 'rgba(255,255,255,0.14)',
-  discBorder: 'rgba(255,255,255,0.10)',  // PTT disc resting outline
-  discTick:   'rgba(255,255,255,0.40)',  // PTT disc idle tick mark
+  // ── Backgrounds ─────────────────────────────────────────────────────────────
+  bg:              '#1B1931', // --bg-base: Page background
+  bgBase:          '#1B1931',
+  bgSurface:       '#221F3A', // --bg-surface: cards, input and output panels
+  bgElevated:      '#2B2547', // --bg-elevated: dropdowns, language picker, chips, hover
 
-  // Foreground — inverted, with a discipline of opacity tiers.
-  fg:        'rgba(255,255,255,0.97)',
-  fgMuted:   'rgba(255,255,255,0.62)',
-  fgFaint:   'rgba(255,255,255,0.36)',
-  fgGhost:   'rgba(255,255,255,0.16)',
-  fgWhisper: 'rgba(255,255,255,0.07)',
-  fgInk:     '#000000',  // text on a light/inverted surface
+  // Surface aliases for backward compatibility
+  surface1:        '#221F3A', // panels / cards
+  surface2:        '#2B2547', // elevated elements / chips
+  surface3:        '#2B2547', // hover / pressed
 
-  // ── Speaker accents — Dusk palette ─────────────────────────────────────────
-  // A is the user (warm). B is the partner (cool). Each side has three layered
-  // hues (top / mid / deep) used in the bloom; the `base` is the legacy single
-  // hue used by chip dots and rings. Translucent variants tuned so multiple
-  // bloom layers stack into a watercolour stain on a near-black surface.
+  // ── Borders ─────────────────────────────────────────────────────────────────
+  border:          'rgba(233, 188, 185, 0.10)', // --border: 1px on panels
+  borderStrong:    'rgba(233, 188, 185, 0.22)', // --border-strong: outlined/ghost buttons
+  hairline:        'rgba(233, 188, 185, 0.10)',
+  hairlineStrong:  'rgba(233, 188, 185, 0.22)',
+  focusRing:       'rgba(237, 158, 89, 0.45)',  // --focus-ring: inputs focus ring
+  discBorder:      'rgba(233, 188, 185, 0.22)',
+  discTick:        'rgba(233, 188, 185, 0.45)',
 
-  accentA:        '#FF8E76',  // peach — the canonical warm accent
-  accentASoft:    'rgba(255,142,118,0.16)',
-  accentARing:    'rgba(255,142,118,0.55)',
-  accentAGlow:    'rgba(255,142,118,0.10)',
-  accentAWhisper: 'rgba(255,142,118,0.045)',
+  // ── Text / Foreground ───────────────────────────────────────────────────────
+  fg:              '#F2E6E4', // --text-primary: translated output, headings
+  textPrimary:     '#F2E6E4',
+  fgMuted:         '#C9B8BE', // --text-secondary: source text, body
+  textSecondary:   '#C9B8BE',
+  fgFaint:         '#8E8499', // --text-muted: placeholders, hints, captions
+  fgGhost:         '#8E8499', // --text-muted
+  textMuted:       '#8E8499',
+  fgWhisper:       'rgba(142, 132, 153, 0.4)',
+  fgInk:           '#FFFFFF', // --text-on-primary: text on primary button
+  textOnPrimary:   '#FFFFFF',
 
-  accentB:        '#A8B2FF',  // periwinkle — the canonical cool accent
-  accentBSoft:    'rgba(168,178,255,0.16)',
-  accentBRing:    'rgba(168,178,255,0.55)',
-  accentBGlow:    'rgba(168,178,255,0.10)',
-  accentBWhisper: 'rgba(168,178,255,0.045)',
+  // ── Brand / Actions ─────────────────────────────────────────────────────────
+  primary:         '#A34054', // --primary: Translate button ONLY
+  primaryHover:    '#B84B60', // --primary-hover
+  accent:          '#ED9E59', // --accent: tiny touches: focus ring, active language, caret
+  accentSoft:      '#E9BCB9', // --accent-soft: icons, small labels
 
-  // Bloom palettes for the three watercolour stains live as hex constants
-  // inside `Bloom.tsx`, where the SVG <RadialGradient> per-stop alpha
-  // governs intensity. Keeping a parallel rgba copy here was a footgun —
-  // when we tuned alpha on the SVG side, the tokens silently rotted.
+  // Accents mapped for compatibility across components
+  accentA:         '#ED9E59', // active indicator / touch
+  accentASoft:     'rgba(237, 158, 89, 0.16)',
+  accentARing:     'rgba(237, 158, 89, 0.45)',
+  accentAGlow:     'rgba(237, 158, 89, 0.14)',
+  accentAWhisper:  'rgba(237, 158, 89, 0.05)',
 
-  // No seam tokens — the horizon is the natural near-black band of the
-  // dusk gradient (`DuskBackdrop`), not a separate horizontal element.
+  accentB:         '#E9BCB9', // soft accent
+  accentBSoft:     'rgba(233, 188, 185, 0.16)',
+  accentBRing:     'rgba(233, 188, 185, 0.45)',
+  accentBGlow:     'rgba(233, 188, 185, 0.14)',
+  accentBWhisper:  'rgba(233, 188, 185, 0.05)',
 
-  // Status — re-tinted so success aligns with the cool palette (seafoam) and
-  // warning doesn't clash with the warm palette.
-  ok:        '#7FD8C9',  // seafoam — coherent with cool bloom
-  okBorder:  'rgba(127,216,201,0.30)',
-  okSoft:    'rgba(127,216,201,0.06)',
-  warn:      '#F4D06A',
-  error:     '#F87171',
-  errorSoft: 'rgba(248,113,113,0.16)',
-  errorBorder: 'rgba(248,113,113,0.32)',
+  // ── Status ──────────────────────────────────────────────────────────────────
+  ok:              '#7BC8A4', // --success
+  success:         '#7BC8A4',
+  okBorder:        'rgba(123, 200, 164, 0.35)',
+  okSoft:          'rgba(123, 200, 164, 0.12)',
+
+  warn:            '#ED9E59', // --warning
+  warning:         '#ED9E59',
+
+  error:           '#E4576B', // --danger
+  danger:          '#E4576B',
+  errorSoft:       'rgba(228, 87, 107, 0.16)',
+  errorBorder:     'rgba(228, 87, 107, 0.32)',
 } as const;
 
-// ── Spacing (8pt-ish) ────────────────────────────────────────────────────────
+// ── Spacing ──────────────────────────────────────────────────────────────────
 
 export const space = {
   xxs: 4,
@@ -91,14 +89,15 @@ export const space = {
 } as const;
 
 // ── Radii ────────────────────────────────────────────────────────────────────
+// Corners 12px for panels, pill shape only for chips and the main button.
 
 export const radius = {
-  xs:  6,
-  sm:  10,
-  md:  14,
-  lg:  20,
-  xl:  28,
-  pill: 999,
+  xs:   6,
+  sm:   8,
+  md:   12,
+  lg:   12, // 12px for panels
+  xl:   12,
+  pill: 999, // chips and main button
 } as const;
 
 // ── Typography ───────────────────────────────────────────────────────────────
@@ -261,17 +260,18 @@ export const font = {
 } as const;
 
 // ── Motion ───────────────────────────────────────────────────────────────────
+// Minimal animations: 150ms fades, no bouncing or glow effects.
 
 export const motion = {
-  springSnappy:   { damping: 22, stiffness: 240, mass: 1 },
-  springSoft:     { damping: 18, stiffness: 160, mass: 1 },
-  springSubtle:   { damping: 28, stiffness: 320, mass: 1 },
-  springBouncy:   { damping: 12, stiffness: 180, mass: 1 },
+  springSnappy:   { damping: 30, stiffness: 300, mass: 1 },
+  springSoft:     { damping: 30, stiffness: 250, mass: 1 },
+  springSubtle:   { damping: 35, stiffness: 320, mass: 1 },
+  springBouncy:   { damping: 30, stiffness: 250, mass: 1 },
 
-  fast:   140,
-  normal: 240,
-  slow:   400,
-  glacial: 800,
+  fast:    150,
+  normal:  150,
+  slow:    250,
+  glacial: 400,
 } as const;
 
 // ── Speaker accent helper ────────────────────────────────────────────────────

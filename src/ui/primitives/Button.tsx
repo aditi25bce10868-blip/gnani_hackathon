@@ -60,7 +60,7 @@ export function Button({
               ? 'fgInk'
               : variant === 'danger'
               ? 'error'
-              : 'fg'
+              : 'fgMuted'
           }>
           {label}
         </Text>
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   base: {
     paddingVertical: 14,
     paddingHorizontal: space.lg,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -82,25 +82,26 @@ const styles = StyleSheet.create({
 
 const variantStyles = StyleSheet.create({
   primary: {
-    backgroundColor: color.fg,
+    backgroundColor: color.primary,
   },
   primaryDisabled: {
-    backgroundColor: color.surface1,
-  },
-  secondary: {
-    backgroundColor: color.surface2,
-    borderWidth: 1,
-    borderColor: color.hairline,
-  },
-  secondaryDisabled: {
-    backgroundColor: color.surface1,
-    borderColor: color.hairline,
+    backgroundColor: color.bgSurface,
     opacity: 0.5,
   },
-  danger: {
-    backgroundColor: color.errorSoft,
+  secondary: {
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: color.errorBorder,
+    borderColor: color.borderStrong,
+  },
+  secondaryDisabled: {
+    backgroundColor: 'transparent',
+    borderColor: color.border,
+    opacity: 0.4,
+  },
+  danger: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: color.error,
   },
   dangerDisabled: {
     opacity: 0.4,
@@ -108,7 +109,7 @@ const variantStyles = StyleSheet.create({
   ghost: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: color.hairline,
+    borderColor: color.borderStrong,
   },
   ghostDisabled: {
     opacity: 0.4,
@@ -122,7 +123,7 @@ export function Divider({ inset = 0 }: { readonly inset?: number }): React.JSX.E
 
 const dividerStyles = StyleSheet.create({
   line: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: color.hairline,
+    height: 1,
+    backgroundColor: color.border,
   },
 });

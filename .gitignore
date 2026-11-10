@@ -76,6 +76,9 @@ yarn-error.log
 # Claude Code workspace state
 .claude/
 
+# VS Code
+.vscode/
+
 # Local build/gradle log dumps
 .build-*.log
 .gradle-*.log
