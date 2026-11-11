@@ -128,7 +128,7 @@ conversations (names, code-switching, follow-ups).
 | Continuity | Can both people finish several turns without restarting? |
 | Speed | How long does each turn take? |
 
-Results: **[add results]**
+
 
 ## Tech stack
 
